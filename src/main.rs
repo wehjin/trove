@@ -2,18 +2,18 @@ extern crate yui;
 
 use std::error::Error;
 
-use yui::{Cling, Confine, Pack, Padding, yard};
+use yui::{Cling, Confine, Pack, Padding, StringEdit, yard};
 use yui::palette::StrokeColor;
 
 fn main() -> Result<(), Box<dyn Error>> {
 	yui::Projector::run_blocking(|projector| {
 		let strands = vec![
-			yard::textfield("Custodian"),
-			yard::textfield("Account"),
-			yard::textfield("Symbol"),
-			yard::textfield("Shares"),
-			yard::textfield("Corral"),
-			yard::textfield("Price"),
+			yard::textfield(2000, "Custodian", StringEdit::empty(), |_| {}),
+			yard::textfield(2001, "Account", StringEdit::empty(), |_| {}),
+			yard::textfield(2002, "Symbol", StringEdit::empty(), |_| {}),
+			yard::textfield(2003, "Shares", StringEdit::empty(), |_| {}),
+			yard::textfield(2004, "Corral", StringEdit::empty(), |_| {}),
+			yard::textfield(2005, "Price", StringEdit::empty(), |_| {}),
 		];
 		let strand_height = 3;
 		let strand_gap = 1;
