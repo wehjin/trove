@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 yui = { git="https://github.com/wehjin/yui.git" }
+stringedit = { git="https://github.com/wehjin/stringedit.git"}
