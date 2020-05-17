@@ -175,9 +175,9 @@ checksum = "05da548ad6865900e60eaba7f589cc0783590a92e940c26953ff81ddbab2d677"
 
 [[package]]
 name = "ppv-lite86"
-version = "0.2.7"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1e4df3c96bec4c7ce0e32fe5960c98ffc869443ec9592a0411ca1ee96e5e2f0"
+checksum = "237a5ed80e274dbc66f86bd59c1e25edc039660be53194b5fe0a482e0f2612ea"
 
 [[package]]
 name = "rand"
@@ -316,7 +316,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "yui"
 version = "0.1.0"
-source = "git+https://github.com/wehjin/yui.git#23d0ca20820ce4dd0faa0419d381f830fab6799e"
+source = "git+https://github.com/wehjin/yui.git#8eaf9ca5c4f83475f817aaa3d723d83019dad8c8"
 dependencies = [
  "log",
  "ncurses",

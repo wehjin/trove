@@ -48,14 +48,16 @@ mod asset_edit {
 	}
 
 	pub enum Action {
-		FieldEdit(Field, stringedit::Action)
+		Done,
+		FieldEdit(Field, stringedit::Action),
 	}
 
 	impl story::Wheel for AssetEdit {
 		type State = AssetEdit;
 		type Action = Action;
+		type Report = ();
 
-		fn build() -> Self::State {
+		fn build(_link: Option<Link<Self::Report>>) -> Self::State {
 			let edits = Field::all().into_iter().fold(
 				HashMap::new(),
 				|mut map, field| {
@@ -71,6 +73,10 @@ mod asset_edit {
 				Action::FieldEdit(field, edit) => {
 					let state = ctx.state().edit(field, edit);
 					AfterRoll::Revise(state)
+				}
+				Action::Done => {
+					ctx.end_prequel();
+					AfterRoll::Ignore
 				}
 			}
 		}
@@ -107,7 +113,10 @@ mod asset_edit {
 			let trellis_height = (strand_height + strand_gap) * strands.len() as i32 - 1;
 			let trellis = yard::trellis(strand_height, strand_gap, strands);
 			let title = yard::title("Add Asset", StrokeColor::BodyOnBackground, Cling::LeftTop);
-			let button = yard::button("Done", |_| {});
+			let button = {
+				let link = link.clone();
+				yard::button("Done", move |_| link.send(Action::Done))
+			};
 			let final_yard = yard::empty()
 				.pack_top(3, button.confine(8, 1, Cling::LeftBottom))
 				.pack_top(trellis_height, trellis)
