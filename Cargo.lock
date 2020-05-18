@@ -51,6 +51,8 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 name = "chad"
 version = "0.1.0"
 dependencies = [
+ "dirs",
+ "echo-lib",
  "stringedit",
  "yui",
 ]
@@ -103,6 +105,14 @@ dependencies = [
  "libc",
  "redox_users",
  "winapi",
+]
+
+[[package]]
+name = "echo-lib"
+version = "0.1.0"
+source = "git+https://github.com/wehjin/gal-core.git#95076c1748046baec7e6672f43d42514c1d921c0"
+dependencies = [
+ "rand",
 ]
 
 [[package]]
@@ -316,7 +326,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "yui"
 version = "0.1.0"
-source = "git+https://github.com/wehjin/yui.git#8eaf9ca5c4f83475f817aaa3d723d83019dad8c8"
+source = "git+https://github.com/wehjin/yui.git#8e12b8c0988cad42a0a52143a45fc7bd1d2b2b1f"
 dependencies = [
  "log",
  "ncurses",

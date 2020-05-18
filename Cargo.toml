@@ -8,4 +8,6 @@ edition = "2018"
 
 [dependencies]
 yui = { git="https://github.com/wehjin/yui.git" }
-stringedit = { git="https://github.com/wehjin/stringedit.git"}
+stringedit = { git="https://github.com/wehjin/stringedit.git" }
+echo-lib = { git="https://github.com/wehjin/gal-core.git" }
+dirs = "2.0.2"

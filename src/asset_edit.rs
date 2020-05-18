@@ -7,43 +7,35 @@ use yui::palette::StrokeColor;
 
 use crate::asset_edit::Field::{Account, Corral, Custodian, Price, Shares, Symbol};
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct AssetEdit {
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum Report {
+	Store,
+}
+
+#[derive(Clone)]
+pub struct EditAsset {
 	edits: HashMap<Field, StringEdit>,
+	report_link: Option<Link<Report>>,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-pub enum Field { Custodian, Account, Symbol, Shares, Corral, Price }
-
-impl Field {
-	pub fn all() -> Vec<Field> { vec![Custodian, Account, Symbol, Shares, Corral, Price] }
-}
-
-impl AssetEdit {
+impl EditAsset {
 	pub fn edit(&self, field: Field, action: stringedit::Action) -> Self {
 		let edit = self.edits[&field].edit(action);
 		let mut edits = self.edits.clone();
 		edits.insert(field, edit);
-		AssetEdit { edits }
+		EditAsset {
+			edits,
+			report_link: self.report_link.to_owned(),
+		}
 	}
 }
 
-impl Index<&Field> for AssetEdit {
-	type Output = StringEdit;
-	fn index(&self, index: &Field) -> &Self::Output { self.edits.get(index).unwrap() }
-}
-
-pub enum Action {
-	Done,
-	FieldEdit(Field, stringedit::Action),
-}
-
-impl story::Wheel for AssetEdit {
-	type State = AssetEdit;
+impl story::Wheel for EditAsset {
+	type State = EditAsset;
 	type Action = Action;
-	type Report = ();
+	type Report = Report;
 
-	fn build(_link: Option<Link<Self::Report>>) -> Self::State {
+	fn build(report_link: Option<Link<Self::Report>>) -> Self::State {
 		let edits = Field::all().into_iter().fold(
 			HashMap::new(),
 			|mut map, field| {
@@ -51,7 +43,7 @@ impl story::Wheel for AssetEdit {
 				map
 			},
 		);
-		AssetEdit { edits }
+		EditAsset { edits, report_link }
 	}
 
 	fn roll(ctx: &impl RollContext<Self::State, Self::Action>, action: Self::Action) -> AfterRoll<Self::State> {
@@ -61,6 +53,9 @@ impl story::Wheel for AssetEdit {
 				AfterRoll::Revise(state)
 			}
 			Action::Done => {
+				if let Some(link) = &ctx.state().report_link {
+					link.send(Report::Store)
+				}
 				ctx.end_prequel();
 				AfterRoll::Ignore
 			}
@@ -110,4 +105,21 @@ impl story::Wheel for AssetEdit {
 			.pad(1);
 		Some(final_yard)
 	}
+}
+
+impl Index<&Field> for EditAsset {
+	type Output = StringEdit;
+	fn index(&self, index: &Field) -> &Self::Output { self.edits.get(index).unwrap() }
+}
+
+pub enum Action {
+	Done,
+	FieldEdit(Field, stringedit::Action),
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum Field { Custodian, Account, Symbol, Shares, Corral, Price }
+
+impl Field {
+	pub fn all() -> Vec<Field> { vec![Custodian, Account, Symbol, Shares, Corral, Price] }
 }
