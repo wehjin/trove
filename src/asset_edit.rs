@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ops::Index;
 
 use stringedit::StringEdit;
-use yui::{AfterRoll, ArcYard, Cling, Confine, Link, Pack, Padding, RollContext, story, yard};
+use yui::{AfterFlow, ArcYard, Cling, Confine, Flow, Link, Pack, Padding, story, yard};
 use yui::palette::StrokeColor;
 
 use crate::asset_edit::Field::{Account, Corral, Custodian, Price, Shares, Symbol};
@@ -12,30 +12,32 @@ pub enum Report {
 	Store,
 }
 
+pub struct EditAsset;
+
 #[derive(Clone)]
-pub struct EditAsset {
+pub struct State {
 	edits: HashMap<Field, StringEdit>,
 	report_link: Option<Link<Report>>,
 }
 
-impl EditAsset {
+impl State {
 	pub fn edit(&self, field: Field, action: stringedit::Action) -> Self {
 		let edit = self.edits[&field].edit(action);
 		let mut edits = self.edits.clone();
 		edits.insert(field, edit);
-		EditAsset {
+		State {
 			edits,
 			report_link: self.report_link.to_owned(),
 		}
 	}
 }
 
-impl story::Wheel for EditAsset {
-	type State = EditAsset;
+impl story::Spark for EditAsset {
+	type State = State;
 	type Action = Action;
 	type Report = Report;
 
-	fn build(report_link: Option<Link<Self::Report>>) -> Self::State {
+	fn create(&self, report_link: Option<Link<Self::Report>>) -> Self::State {
 		let edits = Field::all().into_iter().fold(
 			HashMap::new(),
 			|mut map, field| {
@@ -43,21 +45,21 @@ impl story::Wheel for EditAsset {
 				map
 			},
 		);
-		EditAsset { edits, report_link }
+		State { edits, report_link }
 	}
 
-	fn roll(ctx: &impl RollContext<Self::State, Self::Action>, action: Self::Action) -> AfterRoll<Self::State> {
+	fn flow(ctx: &impl Flow<Self::State, Self::Action>, action: Self::Action) -> AfterFlow<Self::State> {
 		match action {
 			Action::FieldEdit(field, edit) => {
 				let state = ctx.state().edit(field, edit);
-				AfterRoll::Revise(state)
+				AfterFlow::Revise(state)
 			}
 			Action::Done => {
 				if let Some(link) = &ctx.state().report_link {
 					link.send(Report::Store)
 				}
 				ctx.end_prequel();
-				AfterRoll::Ignore
+				AfterFlow::Ignore
 			}
 		}
 	}
@@ -107,7 +109,7 @@ impl story::Wheel for EditAsset {
 	}
 }
 
-impl Index<&Field> for EditAsset {
+impl Index<&Field> for State {
 	type Output = StringEdit;
 	fn index(&self, index: &Field) -> &Self::Output { self.edits.get(index).unwrap() }
 }

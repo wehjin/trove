@@ -5,8 +5,7 @@ extern crate yui;
 
 use std::error::Error;
 
-use echo_lib::Target;
-use yui::{app, Link};
+use yui::app;
 
 use crate::list_assets::ListAssets;
 
@@ -29,7 +28,7 @@ impl QuadText {
 }
 
 mod list_assets {
-	use yui::{AfterRoll, ArcYard, Cling, Confine, Link, Pack, Padding, RollContext, Wheel, yard};
+	use yui::{AfterFlow, ArcYard, Cling, Confine, Flow, Link, Pack, Padding, Spark, yard};
 	use yui::palette::FillColor;
 
 	use crate::asset_edit::EditAsset;
@@ -41,12 +40,12 @@ mod list_assets {
 		AddAsset
 	}
 
-	impl Wheel for ListAssets {
+	impl Spark for ListAssets {
 		type State = QuadText;
 		type Action = Action;
 		type Report = ();
 
-		fn build(_report_link: Option<Link<Self::Report>>) -> Self::State {
+		fn create(&self, _report_link: Option<Link<Self::Report>>) -> Self::State {
 			QuadText {
 				title: "Amazon, Inc.".into(),
 				subtitle: "Focused".into(),
@@ -55,11 +54,11 @@ mod list_assets {
 			}
 		}
 
-		fn roll(ctx: &impl RollContext<Self::State, Self::Action>, action: Self::Action) -> AfterRoll<Self::State> {
+		fn flow(ctx: &impl Flow<Self::State, Self::Action>, action: Self::Action) -> AfterFlow<Self::State> {
 			match action {
 				Action::AddAsset => {
-					ctx.start_prequel::<EditAsset>();
-					AfterRoll::Ignore
+					ctx.start_prequel(EditAsset {});
+					AfterFlow::Ignore
 				}
 			}
 		}
@@ -91,6 +90,6 @@ mod list_assets {
 
 
 fn main() -> Result<(), Box<dyn Error>> {
-	app::run::<ListAssets>(None)?;
+	app::run(ListAssets {}, None)?;
 	Ok(())
 }
