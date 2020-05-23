@@ -53,6 +53,7 @@ version = "0.1.0"
 dependencies = [
  "dirs",
  "echo-lib",
+ "rand",
  "stringedit",
  "yui",
 ]
@@ -110,7 +111,7 @@ dependencies = [
 [[package]]
 name = "echo-lib"
 version = "0.1.0"
-source = "git+https://github.com/wehjin/gal-core.git#95076c1748046baec7e6672f43d42514c1d921c0"
+source = "git+https://github.com/wehjin/gal-core.git#a26b42a6045ad765887130b2a1598688f1007744"
 dependencies = [
  "rand",
 ]

@@ -1,17 +1,22 @@
 use std::io;
 use std::path::PathBuf;
 
-use echo_lib::{Echo, Point};
-
-pub const ASSET_CUSTODIAN: Point = Point::Static { name: "custodian", aspect: "Asset" };
-pub const ASSET_ACCOUNT: Point = Point::Static { name: "account", aspect: "Asset" };
-pub const ASSET_SYMBOL: Point = Point::Static { name: "symbol", aspect: "Asset" };
-pub const ASSET_SHARES: Point = Point::Static { name: "shares", aspect: "Asset" };
-pub const ASSET_CORRAL: Point = Point::Static { name: "corral", aspect: "Asset" };
+use echo_lib::{Echo, Object, ObjectFilter, ObjName, Point, Say, Target, Writable};
 
 pub fn echo() -> io::Result<Echo> {
 	let folder_path = folder_path()?;
-	Ok(Echo::connect(&folder_path))
+	let echo = Echo::connect(&folder_path);
+	init(&echo)?;
+	Ok(echo)
+}
+
+fn init(echo: &Echo) -> io::Result<()> {
+	let assets = echo.chamber()?.objects::<Asset>()?;
+	if assets.len() == 0 {
+		let asset = Asset::new("USD", "Main", "Wallet", "Cash", 0);
+		echo.write(|write| write.writable(&asset))?
+	}
+	Ok(())
 }
 
 fn folder_path() -> io::Result<PathBuf> {
@@ -21,3 +26,49 @@ fn folder_path() -> io::Result<PathBuf> {
 	Ok(path)
 }
 
+#[derive(Debug, Clone)]
+pub struct Asset { object: Object }
+
+impl Asset {
+	pub fn symbol(&self) -> &str { self.object.properties[&SYMBOL].as_str() }
+	pub fn account(&self) -> &str { self.object.properties[&ACCOUNT].as_str() }
+	pub fn custodian(&self) -> &str { self.object.properties[&CUSTODIAN].as_str() }
+	pub fn corral(&self) -> &str { self.object.properties[&CORRAL].as_str() }
+	pub fn shares(&self) -> u64 { self.object.properties[&SHARES].as_number() }
+	pub fn new(symbol: &str, account: &str, custodian: &str, corral: &str, shares: u64) -> Self {
+		let object = Object::new(
+			&ObjName::String(format!("Asset-{}", rand::random::<usize>())),
+			vec![
+				(&SYMBOL, Some(Target::Text(symbol.to_string()))),
+				(&ACCOUNT, Some(Target::Text(account.to_string()))),
+				(&CUSTODIAN, Some(Target::Text(custodian.to_string()))),
+				(&CORRAL, Some(Target::Text(corral.to_string()))),
+				(&SHARES, Some(Target::Number(shares))),
+			],
+		);
+		Asset { object }
+	}
+}
+
+impl<'a> ObjectFilter<'a> for Asset {
+	fn key_point() -> &'a Point { &SYMBOL }
+
+	fn data_points() -> &'a [&'a Point] {
+		&[&SYMBOL, &ACCOUNT, &CUSTODIAN, &SHARES, &CORRAL]
+	}
+
+	fn from_name_and_properties(obj_name: &ObjName, attributes: Vec<(&Point, Option<Target>)>) -> Self {
+		let object = Object::new(obj_name, attributes);
+		Asset { object }
+	}
+}
+
+impl Writable for Asset {
+	fn to_says(&self) -> Vec<Say> { self.object.to_says() }
+}
+
+pub const CUSTODIAN: Point = Point::Static { name: "custodian", aspect: "Asset" };
+pub const ACCOUNT: Point = Point::Static { name: "account", aspect: "Asset" };
+pub const SYMBOL: Point = Point::Static { name: "symbol", aspect: "Asset" };
+pub const SHARES: Point = Point::Static { name: "shares", aspect: "Asset" };
+pub const CORRAL: Point = Point::Static { name: "corral", aspect: "Asset" };
