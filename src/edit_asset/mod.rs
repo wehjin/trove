@@ -5,6 +5,7 @@ use stringedit::StringEdit;
 use yui::{AfterFlow, ArcYard, Cling, Confine, Flow, Link, Pack, Padding, story, yard};
 use yui::palette::StrokeColor;
 
+use crate::data::Asset;
 use crate::edit_asset::Field::{Account, Corral, Custodian, Price, Shares, Symbol};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -27,7 +28,7 @@ impl story::Spark for EditAsset {
 				map
 			},
 		);
-		State { edits, report_link }
+		State { edits, active_field: Field::Custodian, report_link }
 	}
 
 	fn flow(ctx: &impl Flow<Self::State, Self::Action>, action: Self::Action) -> AfterFlow<Self::State> {
@@ -36,9 +37,11 @@ impl story::Spark for EditAsset {
 				let state = ctx.state().edit(field, edit);
 				AfterFlow::Revise(state)
 			}
-			Action::Done => {
-				if let Some(link) = &ctx.state().report_link {
-					link.send(Report::Store)
+			Action::Done(changed) => {
+				if let Some(_changed) = changed {
+					if let Some(link) = &ctx.state().report_link {
+						link.send(Report::Store)
+					}
 				}
 				ctx.end_prequel();
 				AfterFlow::Ignore
@@ -50,19 +53,23 @@ impl story::Spark for EditAsset {
 		let text_fields = vec![
 			{
 				let link = link.to_owned();
-				yard::textfield(2000, "Custodian", state[&Custodian].to_owned(), move |edit| link.send(Action::FieldEdit(Custodian, edit)))
+				yard::textfield(2000, "Custodian*", state[&Custodian].to_owned(), move |edit| {
+					link.send(Action::FieldEdit(Custodian, edit))
+				})
 			},
 			{
 				let link = link.to_owned();
-				yard::textfield(2001, "Account", state[&Account].to_owned(), move |edit| link.send(Action::FieldEdit(Account, edit)))
+				yard::textfield(2001, "Account*", state[&Account].to_owned(), move |edit| {
+					link.send(Action::FieldEdit(Account, edit))
+				})
 			},
 			{
 				let link = link.to_owned();
-				yard::textfield(2002, "Symbol", state[&Symbol].to_owned(), move |edit| link.send(Action::FieldEdit(Symbol, edit)))
+				yard::textfield(2002, "Symbol*", state[&Symbol].to_owned(), move |edit| link.send(Action::FieldEdit(Symbol, edit)))
 			},
 			{
 				let link = link.to_owned();
-				yard::textfield(2003, "Shares", state[&Shares].to_owned(), move |edit| link.send(Action::FieldEdit(Shares, edit)))
+				yard::textfield(2003, "Shares*", state[&Shares].to_owned(), move |edit| link.send(Action::FieldEdit(Shares, edit)))
 			},
 			{
 				let link = link.to_owned();
@@ -72,17 +79,25 @@ impl story::Spark for EditAsset {
 				let link = link.to_owned();
 				yard::textfield(2005, "Price", state[&Price].to_owned(), move |edit| link.send(Action::FieldEdit(Price, edit)))
 			},
+			{
+				let button = yard::button_disabled("Add   ").pad(1);
+				button.confine_height(5, Cling::Top)
+			},
 		];
-		let items = text_fields.into_iter().map(|it| (5u8, it.confine_height(3, Cling::Center))).collect();
-		let list = yard::list(2999, 0, items);
+		let items = text_fields.into_iter().map(|it| {
+			(4u8, it.confine_height(3, Cling::Top))
+		}).collect();
+		let list = yard::list(2999, state.active_field.rank(), items);
 		let title = yard::title("Add Asset", StrokeColor::BodyOnBackground, Cling::LeftTop);
-		let button = {
+		let cancel = {
 			let link = link.clone();
-			yard::button("Cancel", move |_| link.send(Action::Done)).pad(1).confine_height(5, Cling::Top)
+			let button = yard::button_enabled("Cancel", move |_| link.send(Action::Done(None)));
+			button.confine_height(3, Cling::Top)
 		};
+
 		let yard = list
-			.pack_right(20, button)
-			.pack_top(2, title)
+			.pack_right(20, cancel.pad_cols(1))
+			.pack_top(3, title)
 			.pad(1);
 		Some(yard)
 	}
@@ -91,6 +106,7 @@ impl story::Spark for EditAsset {
 #[derive(Clone)]
 pub struct State {
 	edits: HashMap<Field, StringEdit>,
+	active_field: Field,
 	report_link: Option<Link<Report>>,
 }
 
@@ -101,6 +117,7 @@ impl State {
 		edits.insert(field, edit);
 		State {
 			edits,
+			active_field: field,
 			report_link: self.report_link.to_owned(),
 		}
 	}
@@ -112,12 +129,25 @@ impl Index<&Field> for State {
 }
 
 pub enum Action {
-	Done,
+	Done(Option<Asset>),
 	FieldEdit(Field, stringedit::Action),
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Field { Custodian, Account, Symbol, Shares, Corral, Price }
+
+impl Field {
+	pub fn rank(&self) -> usize {
+		match &self {
+			Custodian => 0,
+			Account => 1,
+			Symbol => 2,
+			Shares => 3,
+			Corral => 4,
+			Price => 5,
+		}
+	}
+}
 
 impl Field {
 	pub fn all() -> Vec<Field> { vec![Custodian, Account, Symbol, Shares, Corral, Price] }

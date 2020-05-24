@@ -45,7 +45,7 @@ impl Spark for ListAssets {
 		let column_width = 40;
 		let button = {
 			let link = link.to_owned();
-			yard::button("Add Asset", move |_| link.send(Action::AddAsset))
+			yard::button_enabled("Add Asset", move |_| link.send(Action::AddAsset))
 		};
 		let items = {
 			let mut items = state.assets.iter().map(|asset| {
