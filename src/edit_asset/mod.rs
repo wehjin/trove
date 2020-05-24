@@ -5,7 +5,7 @@ use stringedit::StringEdit;
 use yui::{AfterFlow, ArcYard, Cling, Confine, Flow, Link, Pack, Padding, story, yard};
 use yui::palette::StrokeColor;
 
-use crate::asset_edit::Field::{Account, Corral, Custodian, Price, Shares, Symbol};
+use crate::edit_asset::Field::{Account, Corral, Custodian, Price, Shares, Symbol};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Report {
@@ -13,24 +13,6 @@ pub enum Report {
 }
 
 pub struct EditAsset;
-
-#[derive(Clone)]
-pub struct State {
-	edits: HashMap<Field, StringEdit>,
-	report_link: Option<Link<Report>>,
-}
-
-impl State {
-	pub fn edit(&self, field: Field, action: stringedit::Action) -> Self {
-		let edit = self.edits[&field].edit(action);
-		let mut edits = self.edits.clone();
-		edits.insert(field, edit);
-		State {
-			edits,
-			report_link: self.report_link.to_owned(),
-		}
-	}
-}
 
 impl story::Spark for EditAsset {
 	type State = State;
@@ -64,48 +46,63 @@ impl story::Spark for EditAsset {
 		}
 	}
 
-	fn yard(vision: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
-		let strands = vec![
+	fn yard(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
+		let text_fields = vec![
 			{
 				let link = link.to_owned();
-				yard::textfield(2000, "Custodian", vision[&Custodian].to_owned(), move |edit| link.send(Action::FieldEdit(Custodian, edit)))
+				yard::textfield(2000, "Custodian", state[&Custodian].to_owned(), move |edit| link.send(Action::FieldEdit(Custodian, edit)))
 			},
 			{
 				let link = link.to_owned();
-				yard::textfield(2001, "Account", vision[&Account].to_owned(), move |edit| link.send(Action::FieldEdit(Account, edit)))
+				yard::textfield(2001, "Account", state[&Account].to_owned(), move |edit| link.send(Action::FieldEdit(Account, edit)))
 			},
 			{
 				let link = link.to_owned();
-				yard::textfield(2002, "Symbol", vision[&Symbol].to_owned(), move |edit| link.send(Action::FieldEdit(Symbol, edit)))
+				yard::textfield(2002, "Symbol", state[&Symbol].to_owned(), move |edit| link.send(Action::FieldEdit(Symbol, edit)))
 			},
 			{
 				let link = link.to_owned();
-				yard::textfield(2003, "Shares", vision[&Shares].to_owned(), move |edit| link.send(Action::FieldEdit(Shares, edit)))
+				yard::textfield(2003, "Shares", state[&Shares].to_owned(), move |edit| link.send(Action::FieldEdit(Shares, edit)))
 			},
 			{
 				let link = link.to_owned();
-				yard::textfield(2004, "Corral", vision[&Corral].to_owned(), move |edit| link.send(Action::FieldEdit(Corral, edit)))
+				yard::textfield(2004, "Corral", state[&Corral].to_owned(), move |edit| link.send(Action::FieldEdit(Corral, edit)))
 			},
 			{
 				let link = link.to_owned();
-				yard::textfield(2005, "Price", vision[&Price].to_owned(), move |edit| link.send(Action::FieldEdit(Price, edit)))
+				yard::textfield(2005, "Price", state[&Price].to_owned(), move |edit| link.send(Action::FieldEdit(Price, edit)))
 			},
 		];
-		let strand_height = 3;
-		let strand_gap = 1;
-		let trellis_height = (strand_height + strand_gap) * strands.len() as i32 - 1;
-		let trellis = yard::trellis(strand_height, strand_gap, strands);
+		let items = text_fields.into_iter().map(|it| (5u8, it.confine_height(3, Cling::Center))).collect();
+		let list = yard::list(2999, 0, items);
 		let title = yard::title("Add Asset", StrokeColor::BodyOnBackground, Cling::LeftTop);
 		let button = {
 			let link = link.clone();
-			yard::button("Done", move |_| link.send(Action::Done))
+			yard::button("Cancel", move |_| link.send(Action::Done)).pad(1).confine_height(5, Cling::Top)
 		};
-		let final_yard = yard::empty()
-			.pack_top(3, button.confine(8, 1, Cling::LeftBottom))
-			.pack_top(trellis_height, trellis)
-			.pack_top(4, title)
+		let yard = list
+			.pack_right(20, button)
+			.pack_top(2, title)
 			.pad(1);
-		Some(final_yard)
+		Some(yard)
+	}
+}
+
+#[derive(Clone)]
+pub struct State {
+	edits: HashMap<Field, StringEdit>,
+	report_link: Option<Link<Report>>,
+}
+
+impl State {
+	pub fn edit(&self, field: Field, action: stringedit::Action) -> Self {
+		let edit = self.edits[&field].edit(action);
+		let mut edits = self.edits.clone();
+		edits.insert(field, edit);
+		State {
+			edits,
+			report_link: self.report_link.to_owned(),
+		}
 	}
 }
 

@@ -3,7 +3,7 @@ use yui::{AfterFlow, ArcYard, Cling, Confine, Flow, Link, Pack, Padding, Spark, 
 use yui::palette::{FillColor, StrokeColor};
 use yui::yard::Pressable;
 
-use crate::asset_edit::EditAsset;
+use crate::edit_asset::EditAsset;
 use crate::data::Asset;
 use crate::QuadText;
 

@@ -10,7 +10,7 @@ use yui::app;
 
 use crate::list_assets::ListAssets;
 
-mod asset_edit;
+mod edit_asset;
 mod data;
 
 #[derive(Debug, Clone)]
