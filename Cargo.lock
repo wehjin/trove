@@ -263,7 +263,7 @@ dependencies = [
 [[package]]
 name = "stringedit"
 version = "0.1.0"
-source = "git+https://github.com/wehjin/stringedit.git#c79ee6182d8dc7104cc2a9b6d2e442c6ce7d3c1a"
+source = "git+https://github.com/wehjin/stringedit.git#7c5abff0e242d2210bebfb12256b6893ae4d21d9"
 
 [[package]]
 name = "term"
@@ -327,7 +327,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "yui"
 version = "0.1.0"
-source = "git+https://github.com/wehjin/yui.git#f3a2778de838d9d94c9010154bb2533c967991a9"
+source = "git+https://github.com/wehjin/yui.git#ba9124799e4358f67b277eaa28ae0717eb9e10d5"
 dependencies = [
  "log",
  "ncurses",

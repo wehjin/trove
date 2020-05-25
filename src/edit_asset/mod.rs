@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 use std::ops::Index;
 
-use stringedit::StringEdit;
+use stringedit::{StringEdit, Validity};
 use yui::{AfterFlow, ArcYard, Cling, Confine, Flow, Link, Pack, Padding, story, yard};
 use yui::palette::StrokeColor;
 
 use crate::data::Asset;
 use crate::edit_asset::Field::{Account, Corral, Custodian, Price, Shares, Symbol};
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Report {
-	Store,
+	Changed(Asset),
 }
 
 pub struct EditAsset;
@@ -24,7 +24,7 @@ impl story::Spark for EditAsset {
 		let edits = Field::all().into_iter().fold(
 			HashMap::new(),
 			|mut map, field| {
-				map.insert(field, StringEdit::empty());
+				map.insert(field, StringEdit::empty(field.validity()));
 				map
 			},
 		);
@@ -37,10 +37,11 @@ impl story::Spark for EditAsset {
 				let state = ctx.state().edit(field, edit);
 				AfterFlow::Revise(state)
 			}
-			Action::Done(changed) => {
-				if let Some(_changed) = changed {
-					if let Some(link) = &ctx.state().report_link {
-						link.send(Report::Store)
+			Action::Done(asset) => {
+				if let Some(asset) = asset {
+					match &ctx.state().report_link {
+						Some(link) => link.send(Report::Changed(asset)),
+						_ => {}
 					}
 				}
 				ctx.end_prequel();
@@ -80,8 +81,15 @@ impl story::Spark for EditAsset {
 				yard::textfield(2005, "Price", state[&Price].to_owned(), move |edit| link.send(Action::FieldEdit(Price, edit)))
 			},
 			{
-				let button = yard::button_disabled("Add   ").pad(1);
-				button.confine_height(5, Cling::Top)
+				let label = "Add   ";
+				let button = match state.completed_asset() {
+					Some(asset) => {
+						let link = link.clone();
+						yard::button_enabled(label, move |_| link.send(Action::Done(Some(asset.clone()))))
+					}
+					None => yard::button_disabled(label),
+				};
+				button.pad(1).confine_height(5, Cling::Top)
 			},
 		];
 		let items = text_fields.into_iter().map(|it| {
@@ -121,6 +129,30 @@ impl State {
 			report_link: self.report_link.to_owned(),
 		}
 	}
+	pub fn completed_asset(&self) -> Option<Asset> {
+		if self.is_ready_for_save() {
+			let asset = Asset::new(
+				&self.edits[&Field::Symbol].read(),
+				&self.edits[&Field::Account].read(),
+				&self.edits[&Field::Custodian].read(),
+				&self.edits[&Field::Corral].read(),
+				self.edits[&Field::Shares].read().trim().parse::<u64>().unwrap(),
+			);
+			Some(asset)
+		} else {
+			None
+		}
+	}
+	pub fn is_ready_for_save(&self) -> bool {
+		let mut complete = true;
+		for (_key, value) in &self.edits {
+			if !value.is_valid() {
+				complete = false;
+				break;
+			}
+		}
+		complete
+	}
 }
 
 impl Index<&Field> for State {
@@ -137,6 +169,16 @@ pub enum Action {
 pub enum Field { Custodian, Account, Symbol, Shares, Corral, Price }
 
 impl Field {
+	pub fn validity(&self) -> Validity {
+		match self {
+			Custodian => Validity::NotEmpty,
+			Account => Validity::NotEmpty,
+			Symbol => Validity::NotEmpty,
+			Shares => Validity::UnsignedInt,
+			Corral => Validity::NotEmpty,
+			Price => Validity::Double,
+		}
+	}
 	pub fn rank(&self) -> usize {
 		match &self {
 			Custodian => 0,

@@ -3,8 +3,8 @@ use yui::{AfterFlow, ArcYard, Cling, Confine, Flow, Link, Pack, Padding, Spark, 
 use yui::palette::{FillColor, StrokeColor};
 use yui::yard::Pressable;
 
-use crate::edit_asset::EditAsset;
 use crate::data::Asset;
+use crate::edit_asset::EditAsset;
 use crate::QuadText;
 
 pub struct ListAssets { echo: Echo }
@@ -35,7 +35,8 @@ impl Spark for ListAssets {
 	fn flow(ctx: &impl Flow<Self::State, Self::Action>, action: Self::Action) -> AfterFlow<Self::State> {
 		match action {
 			Action::AddAsset => {
-				ctx.start_prequel(EditAsset {});
+				let edit_asset = EditAsset {};
+				ctx.start_prequel(edit_asset);
 				AfterFlow::Ignore
 			}
 		}
