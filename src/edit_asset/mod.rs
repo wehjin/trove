@@ -8,19 +8,14 @@ use yui::palette::StrokeColor;
 use crate::data::Asset;
 use crate::edit_asset::Field::{Account, Corral, Custodian, Price, Shares, Symbol};
 
-#[derive(Debug, Clone)]
-pub enum Report {
-	Changed(Asset),
-}
-
 pub struct EditAsset;
 
 impl story::Spark for EditAsset {
 	type State = State;
 	type Action = Action;
-	type Report = Report;
+	type Report = Asset;
 
-	fn create(&self, report_link: Option<Link<Self::Report>>) -> Self::State {
+	fn create(&self, _report_link: Option<Link<Self::Report>>) -> Self::State {
 		let edits = Field::all().into_iter().fold(
 			HashMap::new(),
 			|mut map, field| {
@@ -28,23 +23,18 @@ impl story::Spark for EditAsset {
 				map
 			},
 		);
-		State { edits, active_field: Field::Custodian, report_link }
+		State { edits, active_field: Field::Custodian }
 	}
 
-	fn flow(ctx: &impl Flow<Self::State, Self::Action>, action: Self::Action) -> AfterFlow<Self::State> {
+	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
 		match action {
 			Action::FieldEdit(field, edit) => {
-				let state = ctx.state().edit(field, edit);
+				let state = flow.state().edit(field, edit);
 				AfterFlow::Revise(state)
 			}
 			Action::Done(asset) => {
-				if let Some(asset) = asset {
-					match &ctx.state().report_link {
-						Some(link) => link.send(Report::Changed(asset)),
-						_ => {}
-					}
-				}
-				ctx.end_prequel();
+				if let Some(asset) = asset { flow.report(asset) }
+				flow.end_prequel();
 				AfterFlow::Ignore
 			}
 		}
@@ -115,7 +105,6 @@ impl story::Spark for EditAsset {
 pub struct State {
 	edits: HashMap<Field, StringEdit>,
 	active_field: Field,
-	report_link: Option<Link<Report>>,
 }
 
 impl State {
@@ -123,11 +112,7 @@ impl State {
 		let edit = self.edits[&field].edit(action);
 		let mut edits = self.edits.clone();
 		edits.insert(field, edit);
-		State {
-			edits,
-			active_field: field,
-			report_link: self.report_link.to_owned(),
-		}
+		State { edits, active_field: field }
 	}
 	pub fn completed_asset(&self) -> Option<Asset> {
 		if self.is_ready_for_save() {

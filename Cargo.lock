@@ -124,9 +124,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.70"
+version = "0.2.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3baa92041a6fec78c687fa0cc2b3fae8884f743d672cf551bed1d6dac6988d0f"
+checksum = "9457b06509d27052635f90d6466700c65095fdf75409b3fbdd903e988b886f49"
 
 [[package]]
 name = "log"
@@ -327,7 +327,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "yui"
 version = "0.1.0"
-source = "git+https://github.com/wehjin/yui.git#ba9124799e4358f67b277eaa28ae0717eb9e10d5"
+source = "git+https://github.com/wehjin/yui.git#0d5736effcb995cd6eb5450c2438fd3676167554"
 dependencies = [
  "log",
  "ncurses",

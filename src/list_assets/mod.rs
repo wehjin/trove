@@ -5,6 +5,7 @@ use yui::yard::Pressable;
 
 use crate::data::Asset;
 use crate::edit_asset::EditAsset;
+use crate::list_assets::Action::AddAsset;
 use crate::QuadText;
 
 pub struct ListAssets { echo: Echo }
@@ -19,7 +20,19 @@ pub struct State {
 	pub assets: Vec<Asset>,
 }
 
-pub enum Action { AddAsset }
+impl State {
+	fn latest(&self) -> Self {
+		let assets = self.echo.chamber().unwrap().objects::<Asset>().unwrap();
+		let mut next = self.clone();
+		next.assets = assets;
+		next
+	}
+}
+
+pub enum Action {
+	CollectAsset,
+	AddAsset(Asset),
+}
 
 impl Spark for ListAssets {
 	type State = State;
@@ -32,12 +45,18 @@ impl Spark for ListAssets {
 		State { echo, assets }
 	}
 
-	fn flow(ctx: &impl Flow<Self::State, Self::Action>, action: Self::Action) -> AfterFlow<Self::State> {
+	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
 		match action {
-			Action::AddAsset => {
-				let edit_asset = EditAsset {};
-				ctx.start_prequel(edit_asset);
+			Action::CollectAsset => {
+				let link = flow.link().clone();
+				flow.start_prequel(EditAsset {}, move |asset| link.send(AddAsset(asset)));
 				AfterFlow::Ignore
+			}
+			Action::AddAsset(asset) => {
+				let echo = &flow.state().echo;
+				echo.write(|write| write.writable(&asset)).unwrap();
+				let state = flow.state().latest();
+				AfterFlow::Revise(state)
 			}
 		}
 	}
@@ -46,7 +65,7 @@ impl Spark for ListAssets {
 		let column_width = 40;
 		let button = {
 			let link = link.to_owned();
-			yard::button_enabled("Add Asset", move |_| link.send(Action::AddAsset))
+			yard::button_enabled("Add Asset", move |_| link.send(Action::CollectAsset))
 		};
 		let items = {
 			let mut items = state.assets.iter().map(|asset| {
@@ -75,7 +94,7 @@ impl Asset {
 		};
 		let yard = quad_label(&quad_text)
 			.pad(1)
-			.pressable(move |_| link.send(Action::AddAsset));
+			.pressable(move |_| link.send(Action::CollectAsset));
 		(4u8, yard)
 	}
 }
