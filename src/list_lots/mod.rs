@@ -3,58 +3,58 @@ use yui::{AfterFlow, ArcYard, Cling, Confine, Flow, Link, Pack, Padding, Spark, 
 use yui::palette::{FillColor, StrokeColor};
 use yui::yard::Pressable;
 
-use crate::data::Asset;
-use crate::edit_asset::EditAsset;
-use crate::list_assets::Action::AddAsset;
+use crate::data::Lot;
+use crate::edit_lot::EditLot;
+use crate::list_lots::Action::AddLot;
 use crate::QuadText;
 
-pub struct ListAssets { echo: Echo }
+pub struct ListLots { echo: Echo }
 
-impl ListAssets {
-	pub fn new(echo: &Echo) -> Self { ListAssets { echo: echo.clone() } }
+impl ListLots {
+	pub fn new(echo: &Echo) -> Self { ListLots { echo: echo.clone() } }
 }
 
 #[derive(Debug, Clone)]
 pub struct State {
 	echo: Echo,
-	pub assets: Vec<Asset>,
+	pub lots: Vec<Lot>,
 }
 
 impl State {
 	fn latest(&self) -> Self {
-		let assets = self.echo.chamber().unwrap().objects::<Asset>().unwrap();
+		let lots = self.echo.chamber().unwrap().objects::<Lot>().unwrap();
 		let mut next = self.clone();
-		next.assets = assets;
+		next.lots = lots;
 		next
 	}
 }
 
 pub enum Action {
-	CollectAsset,
-	AddAsset(Asset),
+	CollectLot,
+	AddLot(Lot),
 }
 
-impl Spark for ListAssets {
+impl Spark for ListLots {
 	type State = State;
 	type Action = Action;
 	type Report = ();
 
 	fn create(&self, _report_link: Option<Link<Self::Report>>) -> Self::State {
 		let echo = self.echo.to_owned();
-		let assets = echo.chamber().unwrap().objects::<Asset>().unwrap();
-		State { echo, assets }
+		let lots = echo.chamber().unwrap().objects::<Lot>().unwrap();
+		State { echo, lots }
 	}
 
 	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
 		match action {
-			Action::CollectAsset => {
+			Action::CollectLot => {
 				let link = flow.link().clone();
-				flow.start_prequel(EditAsset {}, move |asset| link.send(AddAsset(asset)));
+				flow.start_prequel(EditLot {}, move |lot| link.send(AddLot(lot)));
 				AfterFlow::Ignore
 			}
-			Action::AddAsset(asset) => {
+			Action::AddLot(lot) => {
 				let echo = &flow.state().echo;
-				echo.write(|write| write.writable(&asset)).unwrap();
+				echo.write(|write| write.writable(&lot)).unwrap();
 				let state = flow.state().latest();
 				AfterFlow::Revise(state)
 			}
@@ -65,17 +65,17 @@ impl Spark for ListAssets {
 		let column_width = 40;
 		let button = {
 			let link = link.to_owned();
-			yard::button_enabled("Add Asset", move |_| link.send(Action::CollectAsset))
+			yard::button_enabled("Add Lot", move |_| link.send(Action::CollectLot))
 		};
 		let items = {
-			let mut items = state.assets.iter().map(|asset| {
-				asset.as_item(link)
+			let mut items = state.lots.iter().map(|lot| {
+				lot.as_item(link)
 			}).collect::<Vec<_>>();
 			items.push((3, button));
 			items
 		};
-		let list = yard::list(ASSET_LIST, 0, items);
-		let title = yard::title("Assets", StrokeColor::BodyOnBackground, Cling::Left).pad(1);
+		let list = yard::list(LOT_LIST, 0, items);
+		let title = yard::title("Lots", StrokeColor::BodyOnBackground, Cling::Left).pad(1);
 		let content = list
 			.pack_top(4, title)
 			.confine_width(column_width, Cling::Left);
@@ -83,7 +83,7 @@ impl Spark for ListAssets {
 	}
 }
 
-impl Asset {
+impl Lot {
 	fn as_item(&self, link: &Link<Action>) -> (u8, ArcYard) {
 		let link = link.clone();
 		let quad_text = QuadText {
@@ -94,12 +94,12 @@ impl Asset {
 		};
 		let yard = quad_label(&quad_text)
 			.pad(1)
-			.pressable(move |_| link.send(Action::CollectAsset));
+			.pressable(move |_| link.send(Action::CollectLot));
 		(4u8, yard)
 	}
 }
 
-const ASSET_LIST: i32 = 50000;
+const LOT_LIST: i32 = 50000;
 
 fn quad_label(quad_text: &QuadText) -> ArcYard {
 	yard::quad_label(

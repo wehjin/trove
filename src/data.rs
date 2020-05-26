@@ -11,10 +11,10 @@ pub fn echo() -> io::Result<Echo> {
 }
 
 fn init(echo: &Echo) -> io::Result<()> {
-	let assets = echo.chamber()?.objects::<Asset>()?;
-	if assets.len() == 0 {
-		let asset = Asset::new("USD", "Main", "Wallet", "Cash", 0);
-		echo.write(|write| write.writable(&asset))?
+	let lots = echo.chamber()?.objects::<Lot>()?;
+	if lots.len() == 0 {
+		let lot = Lot::new("USD", "Main", "Wallet", "Cash", 0);
+		echo.write(|write| write.writable(&lot))?
 	}
 	Ok(())
 }
@@ -27,9 +27,9 @@ fn folder_path() -> io::Result<PathBuf> {
 }
 
 #[derive(Debug, Clone)]
-pub struct Asset { object: Object }
+pub struct Lot { object: Object }
 
-impl Asset {
+impl Lot {
 	pub fn symbol(&self) -> &str { self.object.properties[&SYMBOL].as_str() }
 	pub fn account(&self) -> &str { self.object.properties[&ACCOUNT].as_str() }
 	pub fn custodian(&self) -> &str { self.object.properties[&CUSTODIAN].as_str() }
@@ -37,7 +37,7 @@ impl Asset {
 	pub fn shares(&self) -> u64 { self.object.properties[&SHARES].as_number() }
 	pub fn new(symbol: &str, account: &str, custodian: &str, corral: &str, shares: u64) -> Self {
 		let object = Object::new(
-			&ObjName::String(format!("Asset-{}", rand::random::<usize>())),
+			&ObjName::String(format!("Lot-{}", rand::random::<usize>())),
 			vec![
 				(&SYMBOL, Some(Target::Text(symbol.to_string()))),
 				(&ACCOUNT, Some(Target::Text(account.to_string()))),
@@ -46,11 +46,11 @@ impl Asset {
 				(&SHARES, Some(Target::Number(shares))),
 			],
 		);
-		Asset { object }
+		Lot { object }
 	}
 }
 
-impl<'a> ObjectFilter<'a> for Asset {
+impl<'a> ObjectFilter<'a> for Lot {
 	fn key_point() -> &'a Point { &SYMBOL }
 
 	fn data_points() -> &'a [&'a Point] {
@@ -59,16 +59,16 @@ impl<'a> ObjectFilter<'a> for Asset {
 
 	fn from_name_and_properties(obj_name: &ObjName, attributes: Vec<(&Point, Option<Target>)>) -> Self {
 		let object = Object::new(obj_name, attributes);
-		Asset { object }
+		Lot { object }
 	}
 }
 
-impl Writable for Asset {
+impl Writable for Lot {
 	fn to_says(&self) -> Vec<Say> { self.object.to_says() }
 }
 
-pub const CUSTODIAN: Point = Point::Static { name: "custodian", aspect: "Asset" };
-pub const ACCOUNT: Point = Point::Static { name: "account", aspect: "Asset" };
-pub const SYMBOL: Point = Point::Static { name: "symbol", aspect: "Asset" };
-pub const SHARES: Point = Point::Static { name: "shares", aspect: "Asset" };
-pub const CORRAL: Point = Point::Static { name: "corral", aspect: "Asset" };
+pub const CUSTODIAN: Point = Point::Static { name: "custodian", aspect: "Lot" };
+pub const ACCOUNT: Point = Point::Static { name: "account", aspect: "Lot" };
+pub const SYMBOL: Point = Point::Static { name: "symbol", aspect: "Lot" };
+pub const SHARES: Point = Point::Static { name: "shares", aspect: "Lot" };
+pub const CORRAL: Point = Point::Static { name: "corral", aspect: "Lot" };

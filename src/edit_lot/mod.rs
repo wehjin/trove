@@ -5,15 +5,15 @@ use stringedit::{StringEdit, Validity};
 use yui::{AfterFlow, ArcYard, Cling, Confine, Flow, Link, Pack, Padding, story, yard};
 use yui::palette::StrokeColor;
 
-use crate::data::Asset;
-use crate::edit_asset::Field::{Account, Corral, Custodian, Price, Shares, Symbol};
+use crate::data::Lot;
+use crate::edit_lot::Field::{Account, Corral, Custodian, Price, Shares, Symbol};
 
-pub struct EditAsset;
+pub struct EditLot;
 
-impl story::Spark for EditAsset {
+impl story::Spark for EditLot {
 	type State = State;
 	type Action = Action;
-	type Report = Asset;
+	type Report = Lot;
 
 	fn create(&self, _report_link: Option<Link<Self::Report>>) -> Self::State {
 		let edits = Field::all().into_iter().fold(
@@ -32,8 +32,8 @@ impl story::Spark for EditAsset {
 				let state = flow.state().edit(field, edit);
 				AfterFlow::Revise(state)
 			}
-			Action::Done(asset) => {
-				if let Some(asset) = asset { flow.report(asset) }
+			Action::Done(lot) => {
+				if let Some(lot) = lot { flow.report(lot) }
 				flow.end_prequel();
 				AfterFlow::Ignore
 			}
@@ -72,10 +72,10 @@ impl story::Spark for EditAsset {
 			},
 			{
 				let label = "Add   ";
-				let button = match state.completed_asset() {
-					Some(asset) => {
+				let button = match state.completed_lot() {
+					Some(lot) => {
 						let link = link.clone();
-						yard::button_enabled(label, move |_| link.send(Action::Done(Some(asset.clone()))))
+						yard::button_enabled(label, move |_| link.send(Action::Done(Some(lot.clone()))))
 					}
 					None => yard::button_disabled(label),
 				};
@@ -86,7 +86,7 @@ impl story::Spark for EditAsset {
 			(4u8, it.confine_height(3, Cling::Top))
 		}).collect();
 		let list = yard::list(2999, state.active_field.rank(), items);
-		let title = yard::title("Add Asset", StrokeColor::BodyOnBackground, Cling::LeftTop);
+		let title = yard::title("Add Lot", StrokeColor::BodyOnBackground, Cling::LeftTop);
 		let cancel = {
 			let link = link.clone();
 			let button = yard::button_enabled("Cancel", move |_| link.send(Action::Done(None)));
@@ -114,16 +114,16 @@ impl State {
 		edits.insert(field, edit);
 		State { edits, active_field: field }
 	}
-	pub fn completed_asset(&self) -> Option<Asset> {
+	pub fn completed_lot(&self) -> Option<Lot> {
 		if self.is_ready_for_save() {
-			let asset = Asset::new(
+			let lot = Lot::new(
 				&self.edits[&Field::Symbol].read(),
 				&self.edits[&Field::Account].read(),
 				&self.edits[&Field::Custodian].read(),
 				&self.edits[&Field::Corral].read(),
 				self.edits[&Field::Shares].read().trim().parse::<u64>().unwrap(),
 			);
-			Some(asset)
+			Some(lot)
 		} else {
 			None
 		}
@@ -146,7 +146,7 @@ impl Index<&Field> for State {
 }
 
 pub enum Action {
-	Done(Option<Asset>),
+	Done(Option<Lot>),
 	FieldEdit(Field, stringedit::Action),
 }
 

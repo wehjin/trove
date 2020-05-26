@@ -8,9 +8,9 @@ use std::error::Error;
 
 use yui::app;
 
-use crate::list_assets::ListAssets;
+use crate::list_lots::ListLots;
 
-mod edit_asset;
+mod edit_lot;
 mod data;
 
 #[derive(Debug, Clone)]
@@ -28,12 +28,11 @@ impl QuadText {
 	pub fn subvalue(&self) -> &String { &self.subvalue }
 }
 
-mod list_assets;
+mod list_lots;
 
 
 fn main() -> Result<(), Box<dyn Error>> {
 	let echo = data::echo()?;
-	let list_assets = ListAssets::new(&echo);
-	app::run(list_assets, None)?;
+	app::run(ListLots::new(&echo), None)?;
 	Ok(())
 }
