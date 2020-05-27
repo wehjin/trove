@@ -1,30 +1,4 @@
-use std::io;
-use std::path::PathBuf;
-
-use echo_lib::{Echo, Object, ObjectFilter, ObjName, Point, Say, Target, Writable};
-
-pub fn echo() -> io::Result<Echo> {
-	let folder_path = folder_path()?;
-	let echo = Echo::connect(&folder_path);
-	init(&echo)?;
-	Ok(echo)
-}
-
-fn init(echo: &Echo) -> io::Result<()> {
-	let lots = echo.chamber()?.objects::<Lot>()?;
-	if lots.len() == 0 {
-		let lot = Lot::new("USD", "Main", "Wallet", "Cash", 0);
-		echo.write(|write| write.writable(&lot))?
-	}
-	Ok(())
-}
-
-fn folder_path() -> io::Result<PathBuf> {
-	let mut path = dirs::home_dir().unwrap();
-	path.push(".chad");
-	std::fs::create_dir_all(&path)?;
-	Ok(path)
-}
+use echo_lib::{Object, ObjectFilter, ObjName, Point, Say, Target, Writable};
 
 #[derive(Debug, Clone)]
 pub struct Lot { object: Object }

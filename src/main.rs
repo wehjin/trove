@@ -10,8 +10,9 @@ use yui::app;
 
 use crate::list_lots::ListLots;
 
-mod edit_lot;
 mod data;
+mod edit_lot;
+mod list_lots;
 
 #[derive(Debug, Clone)]
 pub struct QuadText {
@@ -28,11 +29,8 @@ impl QuadText {
 	pub fn subvalue(&self) -> &String { &self.subvalue }
 }
 
-mod list_lots;
-
-
 fn main() -> Result<(), Box<dyn Error>> {
-	let echo = data::echo()?;
+	let echo = data::echo(".chad")?;
 	app::run(ListLots::new(&echo), None)?;
 	Ok(())
 }
