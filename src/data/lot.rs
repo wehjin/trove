@@ -1,6 +1,6 @@
 use echo_lib::{Object, ObjectFilter, ObjName, Point, Say, Target, Writable};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Lot { object: Object }
 
 impl Lot {

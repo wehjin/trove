@@ -2,10 +2,13 @@ use std::io;
 
 use echo_lib::Echo;
 
+pub use self::asset::*;
 pub use self::lot::*;
 
 pub mod path;
+mod asset;
 mod lot;
+
 
 pub fn echo(folder_name: &str) -> io::Result<Echo> {
 	let folder_path = path::echo(folder_name)?;
