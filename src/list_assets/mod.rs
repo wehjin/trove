@@ -3,28 +3,27 @@ use yui::{AfterFlow, ArcYard, Cling, Confine, Flow, Link, Pack, Padding, Spark, 
 use yui::palette::{FillColor, StrokeColor};
 use yui::yard::Pressable;
 
-use crate::data::Lot;
+use crate::{data, QuadText};
+use crate::data::{Asset, Lot};
 use crate::edit_lot::EditLot;
-use crate::list_lots::Action::AddLot;
-use crate::QuadText;
+use crate::list_assets::Action::AddLot;
 
-pub struct ListLots { echo: Echo }
+pub struct ListAssets { echo: Echo }
 
-impl ListLots {
-	pub fn new(echo: &Echo) -> Self { ListLots { echo: echo.clone() } }
+impl ListAssets {
+	pub fn new(echo: &Echo) -> Self { ListAssets { echo: echo.clone() } }
 }
 
 #[derive(Debug, Clone)]
 pub struct State {
 	echo: Echo,
-	pub lots: Vec<Lot>,
+	pub assets: Vec<Asset>,
 }
 
 impl State {
 	fn latest(&self) -> Self {
-		let lots = self.echo.chamber().unwrap().objects::<Lot>().unwrap();
 		let mut next = self.clone();
-		next.lots = lots;
+		next.assets = data::assets(self.echo.chamber().unwrap().objects::<Lot>().unwrap());
 		next
 	}
 }
@@ -34,7 +33,7 @@ pub enum Action {
 	AddLot(Lot),
 }
 
-impl Spark for ListLots {
+impl Spark for ListAssets {
 	type State = State;
 	type Action = Action;
 	type Report = ();
@@ -42,7 +41,7 @@ impl Spark for ListLots {
 	fn create(&self, _report_link: Option<Link<Self::Report>>) -> Self::State {
 		let echo = self.echo.to_owned();
 		let lots = echo.chamber().unwrap().objects::<Lot>().unwrap();
-		State { echo, lots }
+		State { echo, assets: data::assets(lots) }
 	}
 
 	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
@@ -68,14 +67,14 @@ impl Spark for ListLots {
 			yard::button_enabled("Add Lot", move |_| link.send(Action::CollectLot))
 		};
 		let items = {
-			let mut items = state.lots.iter().map(|lot| {
-				lot.as_item(link)
+			let mut items = state.assets.iter().map(|asset| {
+				asset.as_item(link)
 			}).collect::<Vec<_>>();
 			items.push((3, button));
 			items
 		};
 		let list = yard::list(LOT_LIST, 0, items);
-		let title = yard::title("Lots", StrokeColor::BodyOnBackground, Cling::Left).pad(1);
+		let title = yard::title("Assets", StrokeColor::BodyOnBackground, Cling::Left).pad(1);
 		let content = list
 			.pack_top(4, title)
 			.confine_width(column_width, Cling::Left);
@@ -83,14 +82,14 @@ impl Spark for ListLots {
 	}
 }
 
-impl Lot {
+impl Asset {
 	fn as_item(&self, link: &Link<Action>) -> (u8, ArcYard) {
 		let link = link.clone();
 		let quad_text = QuadText {
-			title: format!("{} - {}", self.symbol(), self.corral()),
-			subtitle: format!("{}", self.corral()),
-			value: format!("{} {}", self.shares(), self.symbol()),
-			subvalue: format!("{}/{}", self.custodian(), self.account()),
+			title: format!("{}", self.symbol),
+			subtitle: format!("{}", self.corral),
+			value: format!("{} {}", self.shares(), self.symbol),
+			subvalue: format!("{} {}", self.lots.len(), if self.lots.len() == 1 { "lot" } else { "lots" }),
 		};
 		let yard = quad_label(&quad_text)
 			.pad(1)

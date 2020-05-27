@@ -56,3 +56,7 @@ pub struct Asset {
 	pub corral: String,
 	pub lots: Vec<Lot>,
 }
+
+impl Asset {
+	pub fn shares(&self) -> u64 { self.lots.iter().fold(0, |sum, next| sum + next.shares()) }
+}

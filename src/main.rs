@@ -8,11 +8,11 @@ use std::error::Error;
 
 use yui::app;
 
-use crate::list_lots::ListLots;
+use crate::list_assets::ListAssets;
 
 mod data;
 mod edit_lot;
-mod list_lots;
+mod list_assets;
 
 #[derive(Debug, Clone)]
 pub struct QuadText {
@@ -31,6 +31,6 @@ impl QuadText {
 
 fn main() -> Result<(), Box<dyn Error>> {
 	let echo = data::echo(".chad")?;
-	app::run(ListLots::new(&echo), None)?;
+	app::run(ListAssets::new(&echo), None)?;
 	Ok(())
 }
