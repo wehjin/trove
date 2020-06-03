@@ -13,6 +13,7 @@ use crate::list_assets::ListAssets;
 mod data;
 mod edit_lot;
 mod list_assets;
+mod view_asset;
 
 #[derive(Debug, Clone)]
 pub struct QuadText {

@@ -7,6 +7,7 @@ use crate::{data, QuadText};
 use crate::data::{Asset, Lot};
 use crate::edit_lot::EditLot;
 use crate::list_assets::Action::AddLot;
+use crate::view_asset::ViewAsset;
 
 pub struct ListAssets { echo: Echo }
 
@@ -28,11 +29,6 @@ impl State {
 	}
 }
 
-pub enum Action {
-	CollectLot,
-	AddLot(Lot),
-}
-
 impl Spark for ListAssets {
 	type State = State;
 	type Action = Action;
@@ -46,34 +42,45 @@ impl Spark for ListAssets {
 
 	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
 		match action {
-			Action::CollectLot => {
+			Action::Refresh => AfterFlow::Revise(flow.state().latest()),
+			Action::ViewAsset(index) => {
 				let link = flow.link().clone();
-				flow.start_prequel(EditLot {}, move |lot| link.send(AddLot(lot)));
+				flow.start_prequel(
+					ViewAsset { asset: flow.state().assets[index].clone() },
+					move |_| link.send(Action::Refresh),
+				);
 				AfterFlow::Ignore
 			}
 			Action::AddLot(lot) => {
-				let echo = &flow.state().echo;
-				echo.write(|write| write.writable(&lot)).unwrap();
-				let state = flow.state().latest();
-				AfterFlow::Revise(state)
+				flow.state().echo.write(|write| write.writable(&lot)).unwrap();
+				AfterFlow::Revise(flow.state().latest())
+			}
+			Action::CollectLot => {
+				let link = flow.link().clone();
+				flow.start_prequel(
+					EditLot {},
+					move |lot| link.send(AddLot(lot)),
+				);
+				AfterFlow::Ignore
 			}
 		}
 	}
 
 	fn yard(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
 		let column_width = 40;
-		let button = {
-			let link = link.to_owned();
-			yard::button_enabled("Add Lot", move |_| link.send(Action::CollectLot))
-		};
-		let items = {
-			let mut items = state.assets.iter().map(|asset| {
-				asset.as_item(link)
-			}).collect::<Vec<_>>();
-			items.push((3, button));
+		let list_items = {
+			let mut items = state.assets.iter()
+				.enumerate()
+				.map(|(index, asset)| asset.as_item(index, link))
+				.collect::<Vec<_>>();
+			let add_lot_button = {
+				let link = link.to_owned();
+				yard::button_enabled("Add Lot", move |_| link.send(Action::CollectLot))
+			};
+			items.push((3, add_lot_button));
 			items
 		};
-		let list = yard::list(LOT_LIST, 0, items);
+		let list = yard::list(LOT_LIST, 0, list_items);
 		let title = yard::title("Assets", StrokeColor::BodyOnBackground, Cling::Left).pad(1);
 		let content = list
 			.pack_top(4, title)
@@ -82,8 +89,15 @@ impl Spark for ListAssets {
 	}
 }
 
+pub enum Action {
+	Refresh,
+	ViewAsset(usize),
+	AddLot(Lot),
+	CollectLot,
+}
+
 impl Asset {
-	fn as_item(&self, link: &Link<Action>) -> (u8, ArcYard) {
+	fn as_item(&self, index: usize, link: &Link<Action>) -> (u8, ArcYard) {
 		let link = link.clone();
 		let quad_text = QuadText {
 			title: format!("{}", self.symbol),
@@ -93,7 +107,7 @@ impl Asset {
 		};
 		let yard = quad_label(&quad_text)
 			.pad(1)
-			.pressable(move |_| link.send(Action::CollectLot));
+			.pressable(move |_| link.send(Action::ViewAsset(index)));
 		(4u8, yard)
 	}
 }
