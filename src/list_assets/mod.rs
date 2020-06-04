@@ -1,13 +1,19 @@
 use echo_lib::Echo;
-use yui::{AfterFlow, ArcYard, Cling, Confine, Flow, Link, Pack, Padding, Spark, yard};
-use yui::palette::{FillColor, StrokeColor};
-use yui::yard::Pressable;
+use yui::{AfterFlow, ArcYard, Before, Cling, Confine, Flow, Link, Pack, Padding, Spark, yard};
+use yui::palette::FillColor;
+use yui::yard::{Pressable, Tab};
 
-use crate::{data, QuadText};
+use crate::{data, QuadText, YardId};
 use crate::data::{Asset, Lot};
 use crate::edit_lot::EditLot;
 use crate::list_assets::Action::AddLot;
 use crate::view_asset::ViewAsset;
+
+pub use self::action::*;
+pub use self::state::*;
+
+mod action;
+mod state;
 
 pub struct ListAssets { echo: Echo }
 
@@ -15,29 +21,17 @@ impl ListAssets {
 	pub fn new(echo: &Echo) -> Self { ListAssets { echo: echo.clone() } }
 }
 
-#[derive(Debug, Clone)]
-pub struct State {
-	echo: Echo,
-	pub assets: Vec<Asset>,
-}
-
-impl State {
-	fn latest(&self) -> Self {
-		let mut next = self.clone();
-		next.assets = data::assets(self.echo.chamber().unwrap().objects::<Lot>().unwrap());
-		next
-	}
-}
-
 impl Spark for ListAssets {
 	type State = State;
 	type Action = Action;
 	type Report = ();
 
-	fn create(&self, _report_link: Option<Link<Self::Report>>) -> Self::State {
-		let echo = self.echo.to_owned();
-		let lots = echo.chamber().unwrap().objects::<Lot>().unwrap();
-		State { echo, assets: data::assets(lots) }
+	fn yard(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
+		let column_width = 40;
+		let asset_list = yard::list(LOT_LIST, 0, asset_list_items(&state.assets, link));
+		let content = asset_list.confine_width(column_width, Cling::Center).pad(1)
+			.pack_top(3, banner());
+		Some(content)
 	}
 
 	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
@@ -66,35 +60,13 @@ impl Spark for ListAssets {
 		}
 	}
 
-	fn yard(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
-		let column_width = 40;
-		let list_items = {
-			let mut items = state.assets.iter()
-				.enumerate()
-				.map(|(index, asset)| asset.as_item(index, link))
-				.collect::<Vec<_>>();
-			let add_lot_button = {
-				let link = link.to_owned();
-				yard::button_enabled("Add Lot", move |_| link.send(Action::CollectLot))
-			};
-			items.push((3, add_lot_button));
-			items
-		};
-		let list = yard::list(LOT_LIST, 0, list_items);
-		let title = yard::title("Assets", StrokeColor::BodyOnBackground, Cling::Left).pad(1);
-		let content = list
-			.pack_top(4, title)
-			.confine_width(column_width, Cling::Left);
-		Some(content.pad(1))
+	fn create(&self, _report_link: Option<Link<Self::Report>>) -> Self::State {
+		let echo = self.echo.to_owned();
+		let lots = echo.chamber().unwrap().objects::<Lot>().unwrap();
+		State { echo, assets: data::assets(lots) }
 	}
 }
 
-pub enum Action {
-	Refresh,
-	ViewAsset(usize),
-	AddLot(Lot),
-	CollectLot,
-}
 
 impl Asset {
 	fn as_item(&self, index: usize, link: &Link<Action>) -> (u8, ArcYard) {
@@ -123,4 +95,39 @@ fn quad_label(quad_text: &QuadText) -> ArcYard {
 		15,
 		FillColor::Background,
 	)
+}
+
+fn banner() -> ArcYard {
+	let tabbar = yard::tabbar(MAIN_TABS, 0, |_select| {});
+	tabbar.before(yard::fill(FillColor::Primary))
+}
+
+
+enum MainTab {
+	Assets
+}
+
+impl Tab for MainTab {
+	fn uid(&self) -> i32 {
+		match self { MainTab::Assets => YardId::AssetsTab.as_i32() }
+	}
+
+	fn label(&self) -> &str {
+		match self { MainTab::Assets => "Assets" }
+	}
+}
+
+const MAIN_TABS: &[MainTab] = &[MainTab::Assets];
+
+fn asset_list_items(assets: &Vec<Asset>, link: &Link<Action>) -> Vec<(u8, ArcYard)> {
+	let mut items = assets.iter()
+		.enumerate()
+		.map(|(index, asset)| asset.as_item(index, link))
+		.collect::<Vec<_>>();
+	let add_lot_button = {
+		let link = link.to_owned();
+		yard::button_enabled("Add Lot", move |_| link.send(Action::CollectLot))
+	};
+	items.push((3, add_lot_button));
+	items
 }

@@ -35,3 +35,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 	app::run(ListAssets::new(&echo), None)?;
 	Ok(())
 }
+
+
+enum YardId {
+	AssetsTab
+}
+
+impl YardId {
+	pub fn as_i32(&self) -> i32 {
+		match self {
+			YardId::AssetsTab => 700,
+		}
+	}
+}
