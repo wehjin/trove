@@ -1,5 +1,5 @@
 use echo_lib::Echo;
-use yui::{AfterFlow, ArcYard, Before, Cling, Confine, Flow, Link, Pack, Padding, Spark, yard};
+use yui::{AfterFlow, ArcYard, Before, Cling, Confine, Create, Flow, Link, Pack, Padding, Spark, yard};
 use yui::palette::FillColor;
 use yui::yard::{Pressable, Tab};
 
@@ -60,7 +60,7 @@ impl Spark for ListAssets {
 		}
 	}
 
-	fn create(&self, _report_link: Option<Link<Self::Report>>) -> Self::State {
+	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State {
 		let echo = self.echo.to_owned();
 		let lots = echo.chamber().unwrap().objects::<Lot>().unwrap();
 		State { echo, assets: data::assets(lots) }

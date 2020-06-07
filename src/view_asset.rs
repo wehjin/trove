@@ -1,4 +1,4 @@
-use yui::{AfterFlow, ArcYard, Before, Cling, Flow, Link, Pack, Padding, Spark, yard};
+use yui::{AfterFlow, ArcYard, Before, Cling, Create, Flow, Link, Pack, Padding, Spark, yard};
 use yui::palette::{FillColor, StrokeColor};
 use yui::yard::Pressable;
 
@@ -16,19 +16,6 @@ impl Spark for ViewAsset {
 	type State = Asset;
 	type Action = Action;
 	type Report = ();
-
-	fn create(&self, _report_link: Option<Link<Self::Report>>) -> Self::State {
-		self.asset.clone()
-	}
-
-	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
-		match action {
-			Action::Close => {
-				flow.end_prequel();
-				AfterFlow::Ignore
-			}
-		}
-	}
 
 	fn yard(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
 		let title = format!("{}", state.symbol).to_uppercase();
@@ -54,6 +41,19 @@ impl Spark for ViewAsset {
 			.pack_top(6, banner)
 			.pack_bottom(3, close_button);
 		Some(content)
+	}
+
+	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
+		match action {
+			Action::Close => {
+				flow.end_prequel();
+				AfterFlow::Ignore
+			}
+		}
+	}
+
+	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State {
+		self.asset.clone()
 	}
 }
 

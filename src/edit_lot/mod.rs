@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ops::Index;
 
 use stringedit::{StringEdit, Validity};
-use yui::{AfterFlow, ArcYard, Cling, Confine, Flow, Link, Pack, Padding, story, yard};
+use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Link, Pack, Padding, story, yard};
 use yui::palette::StrokeColor;
 
 use crate::data::Lot;
@@ -14,31 +14,6 @@ impl story::Spark for EditLot {
 	type State = State;
 	type Action = Action;
 	type Report = Lot;
-
-	fn create(&self, _report_link: Option<Link<Self::Report>>) -> Self::State {
-		let edits = Field::all().into_iter().fold(
-			HashMap::new(),
-			|mut map, field| {
-				map.insert(field, StringEdit::empty(field.validity()));
-				map
-			},
-		);
-		State { edits, active_field: Field::Custodian }
-	}
-
-	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
-		match action {
-			Action::FieldEdit(field, edit) => {
-				let state = flow.state().edit(field, edit);
-				AfterFlow::Revise(state)
-			}
-			Action::Done(lot) => {
-				if let Some(lot) = lot { flow.report(lot) }
-				flow.end_prequel();
-				AfterFlow::Ignore
-			}
-		}
-	}
 
 	fn yard(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
 		let text_fields = vec![
@@ -98,6 +73,31 @@ impl story::Spark for EditLot {
 			.pack_top(3, title)
 			.pad(1);
 		Some(yard)
+	}
+
+	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
+		match action {
+			Action::FieldEdit(field, edit) => {
+				let state = flow.state().edit(field, edit);
+				AfterFlow::Revise(state)
+			}
+			Action::Done(lot) => {
+				if let Some(lot) = lot { flow.report(lot) }
+				flow.end_prequel();
+				AfterFlow::Ignore
+			}
+		}
+	}
+
+	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State {
+		let edits = Field::all().into_iter().fold(
+			HashMap::new(),
+			|mut map, field| {
+				map.insert(field, StringEdit::empty(field.validity()));
+				map
+			},
+		);
+		State { edits, active_field: Field::Custodian }
 	}
 }
 
