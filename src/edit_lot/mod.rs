@@ -15,7 +15,7 @@ impl story::Spark for EditLot {
 	type Action = Action;
 	type Report = Lot;
 
-	fn yard(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
+	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
 		let text_fields = vec![
 			{
 				let link = link.to_owned();
@@ -75,7 +75,7 @@ impl story::Spark for EditLot {
 		Some(yard)
 	}
 
-	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
+	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
 		match action {
 			Action::FieldEdit(field, edit) => {
 				let state = flow.state().edit(field, edit);

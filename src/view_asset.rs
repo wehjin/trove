@@ -17,7 +17,7 @@ impl Spark for ViewAsset {
 	type Action = Action;
 	type Report = ();
 
-	fn yard(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
+	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
 		let title = format!("{}", state.symbol).to_uppercase();
 		let detail1 = format!("{} {}", state.shares(), state.symbol.to_lowercase());
 		let detail2 = format!("$???");
@@ -43,7 +43,7 @@ impl Spark for ViewAsset {
 		Some(content)
 	}
 
-	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
+	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
 		match action {
 			Action::Close => {
 				flow.end_prequel();

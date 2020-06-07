@@ -26,7 +26,7 @@ impl Spark for ListAssets {
 	type Action = Action;
 	type Report = ();
 
-	fn yard(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
+	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
 		let column_width = 40;
 		let asset_list = yard::list(LOT_LIST, 0, asset_list_items(&state.assets, link));
 		let content = asset_list.confine_width(column_width, Cling::Center).pad(1)
@@ -34,7 +34,7 @@ impl Spark for ListAssets {
 		Some(content)
 	}
 
-	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State> {
+	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
 		match action {
 			Action::Refresh => AfterFlow::Revise(flow.state().latest()),
 			Action::ViewAsset(index) => {
