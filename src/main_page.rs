@@ -4,6 +4,7 @@ use yui::palette::FillColor;
 use yui::yard::Tab;
 
 use crate::list_assets::ListAssets;
+use crate::list_factions::ListFactions;
 use crate::YardId;
 
 #[derive(Debug)]
@@ -15,51 +16,74 @@ impl MainPage {
 
 impl Spark for MainPage {
 	type State = State;
-	type Action = ();
+	type Action = Action;
 	type Report = ();
 
-	fn render(state: &Self::State, _link: &Link<Self::Action>) -> Option<ArcYard> {
-		let body = yard::publisher(&state.list_assets);
-		let yard = body.pack_top(3, banner());
+	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
+		let tabbar = yard::tabbar(MAIN_TABS, tab_index(&state.active_tab), link.callback(|select| Action::SelectTab(MAIN_TABS[select])));
+		let banner = tabbar.before(yard::fill(FillColor::Primary));
+		let body = match state.active_tab {
+			MainTab::Assets => yard::publisher(&state.list_assets),
+			MainTab::Factions => yard::publisher(&state.list_factions),
+		};
+		let yard = body.pack_top(3, banner);
 		Some(yard)
 	}
 
 
-	fn flow(_flow: &impl Flow<Self::State, Self::Action, Self::Report>, _action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
-		AfterFlow::Ignore
+	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
+		match action {
+			Action::SelectTab(tab) => AfterFlow::Revise(State { active_tab: tab, ..flow.state().clone() }),
+		}
 	}
 
 	fn create(&self, create: &Create<Self::Action, Self::Report>) -> Self::State {
 		State {
-			main_tab: MainTab::Assets,
+			active_tab: MainTab::Assets,
 			list_assets: ListAssets::new(&self.echo).spark(create.edge().clone(), None),
+			list_factions: ListFactions::new().spark(create.edge().clone(), None),
 		}
 	}
 }
 
-fn banner() -> ArcYard {
-	let tabbar = yard::tabbar(MAIN_TABS, 0, |_select| {});
-	tabbar.before(yard::fill(FillColor::Primary))
-}
-
 #[derive(Debug, Clone)]
 pub struct State {
-	main_tab: MainTab,
+	active_tab: MainTab,
 	list_assets: Story<ListAssets>,
+	list_factions: Story<ListFactions>,
 }
 
-#[derive(Debug, Clone)]
-enum MainTab { Assets }
+const MAIN_TABS: &[MainTab] = &[MainTab::Assets, MainTab::Factions];
+
+fn tab_index(tab: &MainTab) -> usize {
+	match tab {
+		MainTab::Assets => 0,
+		MainTab::Factions => 1,
+	}
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum Action {
+	SelectTab(MainTab)
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum MainTab { Assets, Factions }
 
 impl Tab for MainTab {
 	fn uid(&self) -> i32 {
-		match self { MainTab::Assets => YardId::AssetsTab.as_i32() }
+		let yard_id = match self {
+			MainTab::Assets => YardId::AssetsTab,
+			MainTab::Factions => YardId::FactionsTab,
+		};
+		yard_id.as_i32()
 	}
 
 	fn label(&self) -> &str {
-		match self { MainTab::Assets => "Assets" }
+		match self {
+			MainTab::Assets => "Assets",
+			MainTab::Factions => "Factions",
+		}
 	}
 }
-
-const MAIN_TABS: &[MainTab] = &[MainTab::Assets];
 

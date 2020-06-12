@@ -8,7 +8,6 @@ use std::error::Error;
 
 use yui::app;
 
-use crate::list_assets::ListAssets;
 use crate::main_page::MainPage;
 
 mod data;
@@ -41,13 +40,15 @@ impl QuadText {
 
 
 enum YardId {
-	AssetsTab
+	AssetsTab,
+	FactionsTab,
 }
 
 impl YardId {
 	pub fn as_i32(&self) -> i32 {
 		match self {
 			YardId::AssetsTab => 700,
+			YardId::FactionsTab => 701,
 		}
 	}
 }

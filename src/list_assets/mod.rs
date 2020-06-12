@@ -1,9 +1,9 @@
 use echo_lib::Echo;
-use yui::{AfterFlow, ArcYard, Before, Cling, Confine, Create, Flow, Link, Pack, Padding, Spark, yard};
+use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Link, Padding, Spark, yard};
 use yui::palette::FillColor;
-use yui::yard::{Pressable, Tab};
+use yui::yard::Pressable;
 
-use crate::{data, QuadText, YardId};
+use crate::{data, QuadText};
 use crate::data::{Asset, Lot};
 use crate::edit_lot::EditLot;
 use crate::list_assets::Action::AddLot;
