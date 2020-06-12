@@ -9,11 +9,20 @@ use std::error::Error;
 use yui::app;
 
 use crate::list_assets::ListAssets;
+use crate::main_page::MainPage;
 
 mod data;
 mod edit_lot;
 mod list_assets;
 mod view_asset;
+mod list_factions;
+mod main_page;
+
+fn main() -> Result<(), Box<dyn Error>> {
+	let echo = data::echo(".chad")?;
+	app::run(MainPage::new(echo), None)?;
+	Ok(())
+}
 
 #[derive(Debug, Clone)]
 pub struct QuadText {
@@ -28,12 +37,6 @@ impl QuadText {
 	pub fn subtitle(&self) -> &String { &self.subtitle }
 	pub fn value(&self) -> &String { &self.value }
 	pub fn subvalue(&self) -> &String { &self.subvalue }
-}
-
-fn main() -> Result<(), Box<dyn Error>> {
-	let echo = data::echo(".chad")?;
-	app::run(ListAssets::new(&echo), None)?;
-	Ok(())
 }
 
 

@@ -15,6 +15,7 @@ pub use self::state::*;
 mod action;
 mod state;
 
+#[derive(Debug)]
 pub struct ListAssets { echo: Echo }
 
 impl ListAssets {
@@ -29,9 +30,8 @@ impl Spark for ListAssets {
 	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
 		let column_width = 40;
 		let asset_list = yard::list(LOT_LIST, 0, asset_list_items(&state.assets, link));
-		let content = asset_list.confine_width(column_width, Cling::Center).pad(1)
-			.pack_top(3, banner());
-		Some(content)
+		let yard = asset_list.confine_width(column_width, Cling::Center).pad(1);
+		Some(yard)
 	}
 
 	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
@@ -96,28 +96,6 @@ fn quad_label(quad_text: &QuadText) -> ArcYard {
 		FillColor::Background,
 	)
 }
-
-fn banner() -> ArcYard {
-	let tabbar = yard::tabbar(MAIN_TABS, 0, |_select| {});
-	tabbar.before(yard::fill(FillColor::Primary))
-}
-
-
-enum MainTab {
-	Assets
-}
-
-impl Tab for MainTab {
-	fn uid(&self) -> i32 {
-		match self { MainTab::Assets => YardId::AssetsTab.as_i32() }
-	}
-
-	fn label(&self) -> &str {
-		match self { MainTab::Assets => "Assets" }
-	}
-}
-
-const MAIN_TABS: &[MainTab] = &[MainTab::Assets];
 
 fn asset_list_items(assets: &Vec<Asset>, link: &Link<Action>) -> Vec<(u8, ArcYard)> {
 	let mut items = assets.iter()
