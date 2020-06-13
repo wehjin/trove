@@ -16,7 +16,7 @@ mod tests {
 		let aapl_alt = Lot::new("aapl", "alt", "schwab", "fang", 1);
 
 		let lots = vec![aapl_main.to_owned(), amzn.to_owned(), aapl_alt.to_owned()];
-		let assets = data::assets(lots);
+		let assets = data::assets_from_lots(lots);
 		assert_eq!(assets.len(), 2);
 		assert_eq!(
 			assets[0],
@@ -30,7 +30,7 @@ mod tests {
 	}
 }
 
-pub fn assets(lots: Vec<Lot>) -> Vec<Asset> {
+pub fn assets_from_lots(lots: Vec<Lot>) -> Vec<Asset> {
 	let mut lot_groups = HashMap::new();
 	for lot in lots {
 		let key = (lot.symbol().to_string(), lot.corral().to_string());

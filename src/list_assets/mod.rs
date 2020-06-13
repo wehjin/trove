@@ -4,7 +4,7 @@ use yui::palette::FillColor;
 use yui::yard::Pressable;
 
 use crate::{data, QuadText};
-use crate::data::{Asset, Lot};
+use crate::data::Asset;
 use crate::edit_lot::EditLot;
 use crate::list_assets::Action::AddLot;
 use crate::view_asset::ViewAsset;
@@ -46,7 +46,7 @@ impl Spark for ListAssets {
 				AfterFlow::Ignore
 			}
 			Action::AddLot(lot) => {
-				flow.state().echo.write(|write| write.writable(&lot)).unwrap();
+				data::add_lot(&lot, &flow.state().echo).unwrap();
 				AfterFlow::Revise(flow.state().latest())
 			}
 			Action::CollectLot => {
@@ -62,8 +62,8 @@ impl Spark for ListAssets {
 
 	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State {
 		let echo = self.echo.to_owned();
-		let lots = echo.chamber().unwrap().objects::<Lot>().unwrap();
-		State { echo, assets: data::assets(lots) }
+		let mut chamber = echo.chamber().unwrap();
+		State { echo, assets: data::read_assets(&mut chamber).unwrap() }
 	}
 }
 

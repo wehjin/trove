@@ -12,4 +12,8 @@ pub fn echo(folder_name: &str) -> io::Result<PathBuf> {
 fn data_folder() -> PathBuf { dirs::home_dir().unwrap() }
 
 #[cfg(test)]
-fn data_folder() -> PathBuf { dirs::cache_dir().unwrap() }
+fn data_folder() -> PathBuf {
+	let mut testdir = std::env::temp_dir();
+	testdir.push(&format!("chad-test-{}", rand::random::<u32>()));
+	testdir
+}
