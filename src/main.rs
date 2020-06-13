@@ -42,6 +42,7 @@ impl QuadText {
 enum YardId {
 	AssetsTab,
 	FactionsTab,
+	FactionsList,
 }
 
 impl YardId {
@@ -49,6 +50,7 @@ impl YardId {
 		match self {
 			YardId::AssetsTab => 700,
 			YardId::FactionsTab => 701,
+			YardId::FactionsList => 702,
 		}
 	}
 }

@@ -41,7 +41,7 @@ impl Spark for MainPage {
 		State {
 			active_tab: MainTab::Assets,
 			list_assets: ListAssets::new(&self.echo).spark(create.edge().clone(), None),
-			list_factions: ListFactions::new().spark(create.edge().clone(), None),
+			list_factions: ListFactions::new(&self.echo).spark(create.edge().clone(), None),
 		}
 	}
 }
