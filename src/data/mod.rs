@@ -93,7 +93,7 @@ pub fn add_lot(lot: &Lot, echo: &Echo) -> io::Result<Chamber> {
 
 pub fn echo(folder_name: &str) -> io::Result<Echo> {
 	let folder_path = path::echo(folder_name)?;
-	let echo = Echo::connect(&folder_path);
+	let echo = Echo::connect("v1", &folder_path);
 	init(&echo)?;
 	Ok(echo)
 }

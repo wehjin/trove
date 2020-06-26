@@ -9,9 +9,7 @@ use crate::YardId;
 #[derive(Debug)]
 pub struct ListFactions { echo: Echo }
 
-impl ListFactions {
-	pub fn new(echo: &Echo) -> Self { ListFactions { echo: echo.clone() } }
-}
+impl ListFactions { pub fn new(echo: &Echo) -> Self { ListFactions { echo: echo.clone() } } }
 
 impl Spark for ListFactions {
 	type State = Echo;
@@ -38,7 +36,7 @@ impl Spark for ListFactions {
 		Some(yard)
 	}
 
-	fn flow(_flow: &impl Flow<Self::State, Self::Action, Self::Report>, _action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
+	fn flow(&self, _flow: &impl Flow<Self::State, Self::Action, Self::Report>, _action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
 		AfterFlow::Ignore
 	}
 

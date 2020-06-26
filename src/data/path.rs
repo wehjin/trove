@@ -13,7 +13,7 @@ fn data_folder() -> PathBuf { dirs::home_dir().unwrap() }
 
 #[cfg(test)]
 fn data_folder() -> PathBuf {
-	let mut testdir = std::env::temp_dir();
-	testdir.push(&format!("chad-test-{}", rand::random::<u32>()));
-	testdir
+	let mut test_dir = std::env::temp_dir();
+	test_dir.push(&format!("chad-test-{}", rand::random::<u32>()));
+	test_dir
 }

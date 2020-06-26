@@ -1,4 +1,4 @@
-use echo_lib::{Object, ObjectFilter, ObjName, Point, Say, Target, Writable};
+use echo_lib::{Object, ObjectFilter, ObjectId, Point, Say, Target, Writable};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Lot { object: Object }
@@ -11,12 +11,12 @@ impl Lot {
 	pub fn shares(&self) -> u64 { self.object.properties[&SHARES].as_number() }
 	pub fn new(symbol: &str, account: &str, custodian: &str, corral: &str, shares: u64) -> Self {
 		let object = Object::new(
-			&ObjName::String(format!("Lot-{}", rand::random::<usize>())),
+			&ObjectId::String(format!("Lot-{}", rand::random::<usize>())),
 			vec![
-				(&SYMBOL, Some(Target::Text(symbol.to_string()))),
-				(&ACCOUNT, Some(Target::Text(account.to_string()))),
-				(&CUSTODIAN, Some(Target::Text(custodian.to_string()))),
-				(&CORRAL, Some(Target::Text(corral.to_string()))),
+				(&SYMBOL, Some(Target::String(symbol.to_string()))),
+				(&ACCOUNT, Some(Target::String(account.to_string()))),
+				(&CUSTODIAN, Some(Target::String(custodian.to_string()))),
+				(&CORRAL, Some(Target::String(corral.to_string()))),
 				(&SHARES, Some(Target::Number(shares))),
 			],
 		);
@@ -31,7 +31,7 @@ impl<'a> ObjectFilter<'a> for Lot {
 		&[&SYMBOL, &ACCOUNT, &CUSTODIAN, &SHARES, &CORRAL]
 	}
 
-	fn from_name_and_properties(obj_name: &ObjName, attributes: Vec<(&Point, Option<Target>)>) -> Self {
+	fn from_name_and_properties(obj_name: &ObjectId, attributes: Vec<(&Point, Option<Target>)>) -> Self {
 		let object = Object::new(obj_name, attributes);
 		Lot { object }
 	}

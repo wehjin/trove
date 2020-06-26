@@ -43,7 +43,7 @@ impl Spark for ViewAsset {
 		Some(content)
 	}
 
-	fn flow(flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
+	fn flow(&self, flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
 		match action {
 			Action::Close => {
 				flow.end_prequel();
