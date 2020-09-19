@@ -1,25 +1,25 @@
-use echo_lib::Echo;
+use chad_core::{AssetCode, Lot};
 use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Padding, SenderLink, Spark, yard};
 use yui::palette::FillColor;
 use yui::yard::{ButtonState, Pressable};
 
-use crate::data;
-use crate::data::Asset;
-use crate::edit_lot::EditLot;
-use crate::list_assets::Action::AddLot;
-use crate::view_asset::ViewAsset;
+use crate::{ChadLink, YardId};
 
-pub use self::action::*;
-pub use self::state::*;
+pub enum Action {
+	AddLot,
+	Refresh,
+	ViewAsset(usize),
+	UpdateLot(Lot),
+}
 
-mod action;
-mod state;
+#[derive(Debug, Clone)]
+pub struct State { lots: Vec<Lot> }
 
 #[derive(Debug)]
-pub struct ListAssets { echo: Echo }
+pub struct ListAssets { link: ChadLink }
 
 impl ListAssets {
-	pub fn new(echo: &Echo) -> Self { ListAssets { echo: echo.clone() } }
+	pub fn new(link: &ChadLink) -> Self { ListAssets { link: link.clone() } }
 }
 
 impl Spark for ListAssets {
@@ -28,83 +28,60 @@ impl Spark for ListAssets {
 	type Report = ();
 
 	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State {
-		let echo = self.echo.to_owned();
-		let mut chamber = echo.chamber().unwrap();
-		State { echo, assets: data::read_assets(&mut chamber).unwrap() }
+		let portfolio = self.link.latest_portfolio();
+		State { lots: portfolio.lots() }
 	}
 
 	fn flow(&self, action: Self::Action, flow: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
 		match action {
-			Action::Refresh => AfterFlow::Revise(flow.state().latest()),
-			Action::ViewAsset(index) => {
-				let link = flow.link().clone();
-				flow.start_prequel(
-					ViewAsset { asset: flow.state().assets[index].clone() },
-					link.map(|_| Action::Refresh),
+			Action::AddLot => {
+				self.link.update_lot(
+					rand::random(),
+					&AssetCode::Common("SQ".to_string()),
+					1.0,
+					&"robinhood".to_string(),
+					27.0,
 				);
-				AfterFlow::Ignore
+				flow.redraw(); // TODO: Fix this in yui.
+				AfterFlow::Revise(State { lots: self.link.latest_portfolio().lots() })
 			}
-			Action::AddLot(lot) => {
-				data::add_lot(&lot, &flow.state().echo).unwrap();
-				AfterFlow::Revise(flow.state().latest())
-			}
-			Action::CollectLot => {
-				let link = flow.link().clone();
-				flow.start_prequel(
-					EditLot {},
-					link.map(|lot| AddLot(lot)),
-				);
-				AfterFlow::Ignore
-			}
+			Action::Refresh => AfterFlow::Revise(State { lots: self.link.latest_portfolio().lots() }),
+			Action::ViewAsset(index) => AfterFlow::Ignore,
+			Action::UpdateLot(lot) => AfterFlow::Ignore,
 		}
 	}
 
 	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
 		let column_width = 40;
-		let asset_list = yard::list(LOT_LIST, 0, asset_list_items(&state.assets, link));
-		let yard = asset_list.confine_width(column_width, Cling::Center).pad(1);
+		let yard = yard::list(YardId::AssetList.as_i32(), 0, list_items(&state.lots, link))
+			.confine_width(column_width, Cling::Center)
+			.pad(1);
 		Some(yard)
 	}
 }
 
-
-impl Asset {
-	fn as_item(&self, index: usize, link: &SenderLink<Action>) -> (u8, ArcYard) {
-		let link = link.clone();
-		let quad_text = QuadText {
-			title: format!("{}", self.symbol),
-			subtitle: format!("{}", self.corral),
-			value: format!("{} {}", self.shares(), self.symbol),
-			subvalue: format!("{} {}", self.lots.len(), if self.lots.len() == 1 { "lot" } else { "lots" }),
-		};
-		let yard = quad_label(&quad_text)
-			.pad(1)
-			.pressable(link.map(move |_| Action::ViewAsset(index)));
-		(4u8, yard)
-	}
-}
-
-const LOT_LIST: i32 = 50000;
-
-fn quad_label(quad_text: &QuadText) -> ArcYard {
-	yard::quad_label(
-		quad_text.title(),
-		quad_text.subtitle(),
-		quad_text.value(),
-		quad_text.subvalue(),
-		15,
-		FillColor::Background,
-	)
-}
-
-fn asset_list_items(assets: &Vec<Asset>, link: &SenderLink<Action>) -> Vec<(u8, ArcYard)> {
-	let mut items = assets.iter()
+fn list_items(lots: &Vec<Lot>, link: &SenderLink<Action>) -> Vec<(u8, ArcYard)> {
+	let mut lot_items = lots.iter()
 		.enumerate()
-		.map(|(index, asset)| asset.as_item(index, link))
+		.map(|(index, lot)| {
+			let quad_text = QuadText {
+				title: match &lot.asset_code {
+					AssetCode::Common(s) => s.to_owned(),
+					AssetCode::Custom(s) => s.to_owned(),
+				},
+				subtitle: format!("{}", lot.custodian),
+				value: format!("{:.2} units", lot.share_count),
+				subvalue: format!("{:.0} USD", lot.currency_value()),
+			};
+			let yard = quad_label(&quad_text)
+				.pad(1)
+				.pressable(link.map(move |_| Action::ViewAsset(index)));
+			(4u8, yard)
+		})
 		.collect::<Vec<_>>();
-	let add_lot_button = yard::button("Add Lot", ButtonState::enabled(link.map(|_| Action::CollectLot)));
-	items.push((3, add_lot_button));
-	items
+	let add_lot_button = yard::button("Add Lot", ButtonState::enabled(link.map(|_| Action::AddLot)));
+	lot_items.push((3, add_lot_button));
+	lot_items
 }
 
 #[derive(Debug, Clone)]
@@ -120,4 +97,15 @@ impl QuadText {
 	pub fn subtitle(&self) -> &String { &self.subtitle }
 	pub fn value(&self) -> &String { &self.value }
 	pub fn subvalue(&self) -> &String { &self.subvalue }
+}
+
+fn quad_label(quad_text: &QuadText) -> ArcYard {
+	yard::quad_label(
+		quad_text.title(),
+		quad_text.subtitle(),
+		quad_text.value(),
+		quad_text.subvalue(),
+		15,
+		FillColor::Background,
+	)
 }

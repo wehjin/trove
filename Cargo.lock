@@ -50,7 +50,7 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 [[package]]
 name = "chad-core"
 version = "0.1.0"
-source = "git+https://github.com/wehjin/chad-core.git#6fe44bc06cda7a5067955727741d3c4fbd81bd4e"
+source = "git+https://github.com/wehjin/chad-core.git#7f271a50c640c49bd7347e24a63bde5d7b414fdf"
 dependencies = [
  "echo-lib",
  "rand",
@@ -349,7 +349,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "yui"
 version = "0.1.0"
-source = "git+https://github.com/wehjin/yui.git#a24ebb89c762b8022b82976dd4467ef821e615af"
+source = "git+https://github.com/wehjin/yui.git#44f503989f6c81ecd61f5aab71604aee67566803"
 dependencies = [
  "log",
  "ncurses",

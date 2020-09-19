@@ -20,7 +20,11 @@ mod list_factions;
 mod main_page;
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let chad_link = chad_core::connect_tmp();
+	let chad_link = {
+		let mut data_folder = dirs::home_dir().expect("Home dir");
+		data_folder.push(".chad");
+		chad_core::connect(&data_folder)
+	};
 	let echo = data::echo(".chad")?;
 	let main_page = MainPage::new(echo, chad_link);
 	app::run(main_page, None)?;
@@ -31,6 +35,7 @@ enum YardId {
 	AssetsTab,
 	FactionsTab,
 	FactionsList,
+	AssetList,
 }
 
 impl YardId {
@@ -39,6 +44,7 @@ impl YardId {
 			YardId::AssetsTab => 700,
 			YardId::FactionsTab => 701,
 			YardId::FactionsList => 702,
+			YardId::AssetList => 703,
 		}
 	}
 }

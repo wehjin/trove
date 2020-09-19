@@ -9,9 +9,6 @@ use yui::yard::ButtonState;
 use crate::data::Lot;
 use crate::edit_lot::Field::{Account, Corral, Custodian, Price, Shares, Symbol};
 
-pub struct EditLot;
-
-
 #[derive(Clone)]
 pub struct State {
 	edits: HashMap<Field, StringEdit>,
@@ -22,6 +19,8 @@ pub enum Action {
 	Done(Option<Lot>),
 	FieldEdit(Field, stringedit::Action),
 }
+
+pub struct EditLot;
 
 impl story::Spark for EditLot {
 	type State = State;
