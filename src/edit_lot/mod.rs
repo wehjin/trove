@@ -1,16 +1,17 @@
 use std::collections::HashMap;
 use std::ops::Index;
 
+use chad_core::{AssetCode, Lot, LotId, SegmentType};
 use stringedit::{StringEdit, Validity};
 use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Pack, Padding, SenderLink, story, yard};
 use yui::palette::StrokeColor;
 use yui::yard::ButtonState;
 
-use crate::data::Lot;
 use crate::edit_lot::Field::{Account, Corral, Custodian, Price, Shares, Symbol};
 
 #[derive(Clone)]
 pub struct State {
+	lot_id: LotId,
 	edits: HashMap<Field, StringEdit>,
 	active_field: Field,
 }
@@ -20,7 +21,10 @@ pub enum Action {
 	FieldEdit(Field, stringedit::Action),
 }
 
-pub struct EditLot;
+pub struct EditLot {
+	pub lot_id: LotId,
+	pub start_values: Vec<(Field, String)>,
+}
 
 impl story::Spark for EditLot {
 	type State = State;
@@ -28,14 +32,22 @@ impl story::Spark for EditLot {
 	type Report = Lot;
 
 	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State {
+		let mut start_values = HashMap::new();
+		self.start_values.iter().for_each(|(field, value)| {
+			start_values.insert(*field, value.to_owned());
+		});
 		let edits = Field::all().into_iter().fold(
 			HashMap::new(),
 			|mut map, field| {
-				map.insert(field, StringEdit::empty(field.validity()));
+				let edit = match start_values.get(&field) {
+					None => StringEdit::empty(field.validity()),
+					Some(v) => StringEdit::new(v.to_owned(), 0, field.validity()),
+				};
+				map.insert(field, edit);
 				map
 			},
 		);
-		State { edits, active_field: Field::Custodian }
+		State { lot_id: self.lot_id, edits, active_field: Field::Custodian }
 	}
 
 	fn flow(&self, action: Self::Action, flow: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
@@ -102,17 +114,18 @@ impl State {
 		let edit = self.edits[&field].edit(action);
 		let mut edits = self.edits.clone();
 		edits.insert(field, edit);
-		State { edits, active_field: field }
+		State { lot_id: self.lot_id, edits, active_field: field }
 	}
 	pub fn completed_lot(&self) -> Option<Lot> {
 		if self.is_ready_for_save() {
-			let lot = Lot::new(
-				&self.edits[&Field::Symbol].read(),
-				&self.edits[&Field::Account].read(),
-				&self.edits[&Field::Custodian].read(),
-				&self.edits[&Field::Corral].read(),
-				self.edits[&Field::Shares].read().trim().parse::<u64>().unwrap(),
-			);
+			let lot = Lot {
+				lot_id: self.lot_id,
+				asset_code: AssetCode::Common(self.edits[&Field::Symbol].read().to_uppercase()),
+				share_count: self.edits[&Field::Shares].read().trim().parse::<f64>().unwrap(),
+				custodian: self.edits[&Field::Custodian].read(),
+				share_price: self.edits[&Field::Price].read().trim().parse::<f64>().unwrap(),
+				segment: SegmentType::Unknown,
+			};
 			Some(lot)
 		} else {
 			None

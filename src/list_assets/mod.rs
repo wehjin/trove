@@ -4,12 +4,13 @@ use yui::palette::FillColor;
 use yui::yard::{ButtonState, Pressable};
 
 use crate::{ChadLink, YardId};
+use crate::edit_lot::EditLot;
 
 pub enum Action {
 	AddLot,
+	WriteLot(Lot),
 	Refresh,
 	ViewAsset(usize),
-	UpdateLot(Lot),
 }
 
 #[derive(Debug, Clone)]
@@ -35,19 +36,16 @@ impl Spark for ListAssets {
 	fn flow(&self, action: Self::Action, flow: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
 		match action {
 			Action::AddLot => {
-				self.link.update_lot(
-					rand::random(),
-					&AssetCode::Common("SQ".to_string()),
-					1.0,
-					&"robinhood".to_string(),
-					27.0,
-				);
-				flow.redraw(); // TODO: Fix this in yui.
+				let spark = EditLot { lot_id: rand::random(), start_values: Vec::new() };
+				flow.start_prequel(spark, flow.link().map(Action::WriteLot));
+				AfterFlow::Revise(State { lots: self.link.latest_portfolio().lots() })
+			}
+			Action::WriteLot(lot) => {
+				self.link.update_lot(lot.lot_id, &lot.asset_code, lot.share_count, &lot.custodian, lot.share_price);
 				AfterFlow::Revise(State { lots: self.link.latest_portfolio().lots() })
 			}
 			Action::Refresh => AfterFlow::Revise(State { lots: self.link.latest_portfolio().lots() }),
 			Action::ViewAsset(index) => AfterFlow::Ignore,
-			Action::UpdateLot(lot) => AfterFlow::Ignore,
 		}
 	}
 
