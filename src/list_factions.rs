@@ -1,5 +1,5 @@
 use echo_lib::Echo;
-use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Link, Pack, Padding, Spark, yard};
+use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Pack, Padding, SenderLink, Spark, yard};
 use yui::palette::StrokeColor;
 use yui::yard::Pressable;
 
@@ -16,7 +16,13 @@ impl Spark for ListFactions {
 	type Action = ();
 	type Report = ();
 
-	fn render(state: &Self::State, _link: &Link<Self::Action>) -> Option<ArcYard> {
+	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State { self.echo.clone() }
+
+	fn flow(&self, _action: Self::Action, _flow: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
+		AfterFlow::Ignore
+	}
+
+	fn render(state: &Self::State, _link: &SenderLink<Self::Action>) -> Option<ArcYard> {
 		let yard_result = state.chamber()
 			.and_then(|mut chamber| read_factions(&mut chamber))
 			.map(|factions| {
@@ -24,7 +30,7 @@ impl Spark for ListFactions {
 					let title_line = yard::label(it.name().to_lowercase(), StrokeColor::BodyOnBackground, Cling::Left);
 					let subtitle_line = yard::label(&asset_count_string(&it.assets), StrokeColor::CommentOnBackground, Cling::Left);
 					let yard = title_line.pack_bottom(1, subtitle_line);
-					(4, yard.pad(1).pressable(|_| {}))
+					(4, yard.pad(1).pressable(SenderLink::ignore()))
 				}).collect::<Vec<_>>();
 				items
 			})
@@ -35,12 +41,6 @@ impl Spark for ListFactions {
 		};
 		Some(yard)
 	}
-
-	fn flow(&self, _flow: &impl Flow<Self::State, Self::Action, Self::Report>, _action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
-		AfterFlow::Ignore
-	}
-
-	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State { self.echo.clone() }
 }
 
 fn asset_count_string(assets: &Vec<Asset>) -> String {

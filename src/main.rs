@@ -1,3 +1,4 @@
+extern crate chad_core;
 extern crate dirs;
 extern crate echo_lib;
 extern crate rand;
@@ -6,6 +7,7 @@ extern crate yui;
 
 use std::error::Error;
 
+pub use chad_core::Link as ChadLink;
 use yui::app;
 
 use crate::main_page::MainPage;
@@ -18,8 +20,10 @@ mod list_factions;
 mod main_page;
 
 fn main() -> Result<(), Box<dyn Error>> {
+	let chad_link = chad_core::connect_tmp();
 	let echo = data::echo(".chad")?;
-	app::run(MainPage::new(echo), None)?;
+	let main_page = MainPage::new(echo, chad_link);
+	app::run(main_page, None)?;
 	Ok(())
 }
 

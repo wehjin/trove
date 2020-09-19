@@ -1,17 +1,21 @@
 use echo_lib::Echo;
-use yui::{AfterFlow, ArcYard, Before, Create, Flow, Link, Pack, Spark, Story, yard};
+use yui::{AfterFlow, ArcYard, Before, Create, Flow, Pack, SenderLink, Spark, Story, yard};
 use yui::palette::FillColor;
 use yui::yard::Tab;
 
+use crate::{ChadLink, YardId};
 use crate::list_assets::ListAssets;
 use crate::list_factions::ListFactions;
-use crate::YardId;
 
 #[derive(Debug)]
-pub struct MainPage { echo: Echo }
+pub struct MainPage {
+	echo: Echo,
+}
 
 impl MainPage {
-	pub fn new(echo: Echo) -> Self { MainPage { echo } }
+	pub fn new(echo: Echo, link: impl ChadLink) -> Self {
+		MainPage { echo }
+	}
 }
 
 impl Spark for MainPage {
@@ -19,30 +23,30 @@ impl Spark for MainPage {
 	type Action = Action;
 	type Report = ();
 
-	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
-		let tabbar = yard::tabbar(MAIN_TABS, tab_index(&state.active_tab), link.callback(|select| Action::SelectTab(MAIN_TABS[select])));
-		let banner = tabbar.before(yard::fill(FillColor::Primary));
-		let body = match state.active_tab {
-			MainTab::Assets => yard::publisher(&state.list_assets),
-			MainTab::Factions => yard::publisher(&state.list_factions),
-		};
-		let yard = body.pack_top(3, banner);
-		Some(yard)
+	fn create(&self, create: &Create<Self::Action, Self::Report>) -> Self::State {
+		State {
+			active_tab: MainTab::Assets,
+			list_assets: yui::spark(ListAssets::new(&self.echo), create.edge().clone(), None),
+			list_factions: yui::spark(ListFactions::new(&self.echo), create.edge().clone(), None),
+		}
 	}
 
 
-	fn flow(&self, flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
+	fn flow(&self, action: Self::Action, flow: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
 		match action {
 			Action::SelectTab(tab) => AfterFlow::Revise(State { active_tab: tab, ..flow.state().clone() }),
 		}
 	}
 
-	fn create(&self, create: &Create<Self::Action, Self::Report>) -> Self::State {
-		State {
-			active_tab: MainTab::Assets,
-			list_assets: ListAssets::new(&self.echo).spark(create.edge().clone(), None),
-			list_factions: ListFactions::new(&self.echo).spark(create.edge().clone(), None),
-		}
+	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
+		let tabbar = yard::tabbar(MAIN_TABS, tab_index(&state.active_tab), link.map(|select| Action::SelectTab(MAIN_TABS[select])));
+		let banner = tabbar.before(yard::fill(FillColor::Primary));
+		let body = match state.active_tab {
+			MainTab::Assets => yard::publisher(&state.list_assets, SenderLink::ignore()),
+			MainTab::Factions => yard::publisher(&state.list_factions, SenderLink::ignore()),
+		};
+		let yard = body.pack_top(3, banner);
+		Some(yard)
 	}
 }
 

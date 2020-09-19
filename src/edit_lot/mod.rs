@@ -2,80 +2,44 @@ use std::collections::HashMap;
 use std::ops::Index;
 
 use stringedit::{StringEdit, Validity};
-use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Link, Pack, Padding, story, yard};
+use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Pack, Padding, SenderLink, story, yard};
 use yui::palette::StrokeColor;
+use yui::yard::ButtonState;
 
 use crate::data::Lot;
 use crate::edit_lot::Field::{Account, Corral, Custodian, Price, Shares, Symbol};
 
 pub struct EditLot;
 
+
+#[derive(Clone)]
+pub struct State {
+	edits: HashMap<Field, StringEdit>,
+	active_field: Field,
+}
+
+pub enum Action {
+	Done(Option<Lot>),
+	FieldEdit(Field, stringedit::Action),
+}
+
 impl story::Spark for EditLot {
 	type State = State;
 	type Action = Action;
 	type Report = Lot;
 
-	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
-		let text_fields = vec![
-			{
-				let link = link.to_owned();
-				yard::textfield(2000, "Custodian*", state[&Custodian].to_owned(), move |edit| {
-					link.send(Action::FieldEdit(Custodian, edit))
-				})
+	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State {
+		let edits = Field::all().into_iter().fold(
+			HashMap::new(),
+			|mut map, field| {
+				map.insert(field, StringEdit::empty(field.validity()));
+				map
 			},
-			{
-				let link = link.to_owned();
-				yard::textfield(2001, "Account*", state[&Account].to_owned(), move |edit| {
-					link.send(Action::FieldEdit(Account, edit))
-				})
-			},
-			{
-				let link = link.to_owned();
-				yard::textfield(2002, "Symbol*", state[&Symbol].to_owned(), move |edit| link.send(Action::FieldEdit(Symbol, edit)))
-			},
-			{
-				let link = link.to_owned();
-				yard::textfield(2003, "Shares*", state[&Shares].to_owned(), move |edit| link.send(Action::FieldEdit(Shares, edit)))
-			},
-			{
-				let link = link.to_owned();
-				yard::textfield(2004, "Corral", state[&Corral].to_owned(), move |edit| link.send(Action::FieldEdit(Corral, edit)))
-			},
-			{
-				let link = link.to_owned();
-				yard::textfield(2005, "Price", state[&Price].to_owned(), move |edit| link.send(Action::FieldEdit(Price, edit)))
-			},
-			{
-				let label = "Add   ";
-				let button = match state.completed_lot() {
-					Some(lot) => {
-						let link = link.clone();
-						yard::button_enabled(label, move |_| link.send(Action::Done(Some(lot.clone()))))
-					}
-					None => yard::button_disabled(label),
-				};
-				button.pad(1).confine_height(5, Cling::Top)
-			},
-		];
-		let items = text_fields.into_iter().map(|it| {
-			(4u8, it.confine_height(3, Cling::Top))
-		}).collect();
-		let list = yard::list(2999, state.active_field.rank(), items);
-		let title = yard::title("Add Lot", StrokeColor::BodyOnBackground, Cling::LeftTop);
-		let cancel = {
-			let link = link.clone();
-			let button = yard::button_enabled("Cancel", move |_| link.send(Action::Done(None)));
-			button.confine_height(3, Cling::Top)
-		};
-
-		let yard = list
-			.pack_right(20, cancel.pad_cols(1))
-			.pack_top(3, title)
-			.pad(1);
-		Some(yard)
+		);
+		State { edits, active_field: Field::Custodian }
 	}
 
-	fn flow(&self, flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
+	fn flow(&self, action: Self::Action, flow: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
 		match action {
 			Action::FieldEdit(field, edit) => {
 				let state = flow.state().edit(field, edit);
@@ -89,23 +53,50 @@ impl story::Spark for EditLot {
 		}
 	}
 
-	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State {
-		let edits = Field::all().into_iter().fold(
-			HashMap::new(),
-			|mut map, field| {
-				map.insert(field, StringEdit::empty(field.validity()));
-				map
+	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
+		let text_fields = vec![
+			yard::textfield(
+				2000,
+				"Custodian*",
+				state[&Custodian].to_owned(),
+				link.map(|edit| Action::FieldEdit(Custodian, edit)),
+			),
+			yard::textfield(
+				2001,
+				"Account*",
+				state[&Account].to_owned(),
+				link.map(|edit| Action::FieldEdit(Account, edit)),
+			),
+			yard::textfield(2002, "Symbol*", state[&Symbol].to_owned(), link.map(|edit| Action::FieldEdit(Symbol, edit))),
+			yard::textfield(2003, "Shares*", state[&Shares].to_owned(), link.map(|edit| Action::FieldEdit(Shares, edit))),
+			yard::textfield(2004, "Corral", state[&Corral].to_owned(), link.map(|edit| Action::FieldEdit(Corral, edit))),
+			yard::textfield(2005, "Price", state[&Price].to_owned(), link.map(|edit| Action::FieldEdit(Price, edit))),
+			{
+				let label = "Add   ";
+				let button = if let Some(lot) = state.completed_lot() {
+					let on_click = link.map(move |_| Action::Done(Some(lot.clone())));
+					yard::button(label, ButtonState::enabled(on_click))
+				} else {
+					yard::button(label, ButtonState::disabled())
+				};
+				button.pad(1).confine_height(5, Cling::Top)
 			},
-		);
-		State { edits, active_field: Field::Custodian }
+		];
+		let items = text_fields.into_iter().map(|it| {
+			(4u8, it.confine_height(3, Cling::Top))
+		}).collect();
+		let list = yard::list(2999, state.active_field.rank(), items);
+		let title = yard::title("Add Lot", StrokeColor::BodyOnBackground, Cling::LeftTop);
+		let cancel = yard::button("Cancel", ButtonState::enabled(link.map(|_| Action::Done(None))))
+			.confine_height(3, Cling::Top);
+		let yard = list
+			.pack_right(20, cancel.pad_cols(1))
+			.pack_top(3, title)
+			.pad(1);
+		Some(yard)
 	}
 }
 
-#[derive(Clone)]
-pub struct State {
-	edits: HashMap<Field, StringEdit>,
-	active_field: Field,
-}
 
 impl State {
 	pub fn edit(&self, field: Field, action: stringedit::Action) -> Self {
@@ -143,11 +134,6 @@ impl State {
 impl Index<&Field> for State {
 	type Output = StringEdit;
 	fn index(&self, index: &Field) -> &Self::Output { self.edits.get(index).unwrap() }
-}
-
-pub enum Action {
-	Done(Option<Lot>),
-	FieldEdit(Field, stringedit::Action),
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]

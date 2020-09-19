@@ -7,8 +7,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-yui = { git="https://github.com/wehjin/yui.git" }
-stringedit = { git="https://github.com/wehjin/stringedit.git" }
-echo-lib = { git="https://github.com/wehjin/gal-core.git" }
+yui = { git = "https://github.com/wehjin/yui.git" }
+stringedit = { git = "https://github.com/wehjin/stringedit.git" }
+echo-lib = { git = "https://github.com/wehjin/gal-core.git" }
 dirs = "2.0.2"
 rand = "0.7.3"
+chad-core = { git = "https://github.com/wehjin/chad-core.git" }

@@ -1,7 +1,7 @@
 use echo_lib::Echo;
-use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Link, Padding, Spark, yard};
+use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Padding, SenderLink, Spark, yard};
 use yui::palette::FillColor;
-use yui::yard::Pressable;
+use yui::yard::{ButtonState, Pressable};
 
 use crate::data;
 use crate::data::Asset;
@@ -27,21 +27,20 @@ impl Spark for ListAssets {
 	type Action = Action;
 	type Report = ();
 
-	fn render(state: &Self::State, link: &Link<Self::Action>) -> Option<ArcYard> {
-		let column_width = 40;
-		let asset_list = yard::list(LOT_LIST, 0, asset_list_items(&state.assets, link));
-		let yard = asset_list.confine_width(column_width, Cling::Center).pad(1);
-		Some(yard)
+	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State {
+		let echo = self.echo.to_owned();
+		let mut chamber = echo.chamber().unwrap();
+		State { echo, assets: data::read_assets(&mut chamber).unwrap() }
 	}
 
-	fn flow(&self, flow: &impl Flow<Self::State, Self::Action, Self::Report>, action: Self::Action) -> AfterFlow<Self::State, Self::Report> {
+	fn flow(&self, action: Self::Action, flow: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
 		match action {
 			Action::Refresh => AfterFlow::Revise(flow.state().latest()),
 			Action::ViewAsset(index) => {
 				let link = flow.link().clone();
 				flow.start_prequel(
 					ViewAsset { asset: flow.state().assets[index].clone() },
-					move |_| link.send(Action::Refresh),
+					link.map(|_| Action::Refresh),
 				);
 				AfterFlow::Ignore
 			}
@@ -53,23 +52,24 @@ impl Spark for ListAssets {
 				let link = flow.link().clone();
 				flow.start_prequel(
 					EditLot {},
-					move |lot| link.send(AddLot(lot)),
+					link.map(|lot| AddLot(lot)),
 				);
 				AfterFlow::Ignore
 			}
 		}
 	}
 
-	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State {
-		let echo = self.echo.to_owned();
-		let mut chamber = echo.chamber().unwrap();
-		State { echo, assets: data::read_assets(&mut chamber).unwrap() }
+	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
+		let column_width = 40;
+		let asset_list = yard::list(LOT_LIST, 0, asset_list_items(&state.assets, link));
+		let yard = asset_list.confine_width(column_width, Cling::Center).pad(1);
+		Some(yard)
 	}
 }
 
 
 impl Asset {
-	fn as_item(&self, index: usize, link: &Link<Action>) -> (u8, ArcYard) {
+	fn as_item(&self, index: usize, link: &SenderLink<Action>) -> (u8, ArcYard) {
 		let link = link.clone();
 		let quad_text = QuadText {
 			title: format!("{}", self.symbol),
@@ -79,7 +79,7 @@ impl Asset {
 		};
 		let yard = quad_label(&quad_text)
 			.pad(1)
-			.pressable(move |_| link.send(Action::ViewAsset(index)));
+			.pressable(link.map(move |_| Action::ViewAsset(index)));
 		(4u8, yard)
 	}
 }
@@ -97,15 +97,12 @@ fn quad_label(quad_text: &QuadText) -> ArcYard {
 	)
 }
 
-fn asset_list_items(assets: &Vec<Asset>, link: &Link<Action>) -> Vec<(u8, ArcYard)> {
+fn asset_list_items(assets: &Vec<Asset>, link: &SenderLink<Action>) -> Vec<(u8, ArcYard)> {
 	let mut items = assets.iter()
 		.enumerate()
 		.map(|(index, asset)| asset.as_item(index, link))
 		.collect::<Vec<_>>();
-	let add_lot_button = {
-		let link = link.to_owned();
-		yard::button_enabled("Add Lot", move |_| link.send(Action::CollectLot))
-	};
+	let add_lot_button = yard::button("Add Lot", ButtonState::enabled(link.map(|_| Action::CollectLot)));
 	items.push((3, add_lot_button));
 	items
 }
