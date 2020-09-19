@@ -9,7 +9,6 @@ use crate::edit_lot::EditLot;
 pub enum Action {
 	AddLot,
 	WriteLot(Lot),
-	Refresh,
 	ViewAsset(usize),
 }
 
@@ -44,7 +43,6 @@ impl Spark for ListAssets {
 				self.link.update_lot(lot.lot_id, &lot.asset_code, lot.share_count, &lot.custodian, lot.share_price);
 				AfterFlow::Revise(State { lots: self.link.latest_portfolio().lots() })
 			}
-			Action::Refresh => AfterFlow::Revise(State { lots: self.link.latest_portfolio().lots() }),
 			Action::ViewAsset(index) => AfterFlow::Ignore,
 		}
 	}
