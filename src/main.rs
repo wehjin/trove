@@ -23,22 +23,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 	Ok(())
 }
 
-#[derive(Debug, Clone)]
-pub struct QuadText {
-	title: String,
-	subtitle: String,
-	value: String,
-	subvalue: String,
-}
-
-impl QuadText {
-	pub fn title(&self) -> &String { &self.title }
-	pub fn subtitle(&self) -> &String { &self.subtitle }
-	pub fn value(&self) -> &String { &self.value }
-	pub fn subvalue(&self) -> &String { &self.subvalue }
-}
-
-
 enum YardId {
 	AssetsTab,
 	FactionsTab,

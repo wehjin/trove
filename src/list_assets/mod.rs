@@ -3,7 +3,7 @@ use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Link, Padding, Spark
 use yui::palette::FillColor;
 use yui::yard::Pressable;
 
-use crate::{data, QuadText};
+use crate::data;
 use crate::data::Asset;
 use crate::edit_lot::EditLot;
 use crate::list_assets::Action::AddLot;
@@ -108,4 +108,19 @@ fn asset_list_items(assets: &Vec<Asset>, link: &Link<Action>) -> Vec<(u8, ArcYar
 	};
 	items.push((3, add_lot_button));
 	items
+}
+
+#[derive(Debug, Clone)]
+pub struct QuadText {
+	title: String,
+	subtitle: String,
+	value: String,
+	subvalue: String,
+}
+
+impl QuadText {
+	pub fn title(&self) -> &String { &self.title }
+	pub fn subtitle(&self) -> &String { &self.subtitle }
+	pub fn value(&self) -> &String { &self.value }
+	pub fn subvalue(&self) -> &String { &self.subvalue }
 }
