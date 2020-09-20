@@ -23,7 +23,11 @@ impl Spark for ListFactions {
 
 	fn render(state: &Self::State, _link: &SenderLink<Self::Action>) -> Option<ArcYard> {
 		let items = state.iter().enumerate().map(|(i, segment)| {
-			let title = yard::label(&segment_name(segment), StrokeColor::BodyOnBackground, Cling::Left);
+			let title = yard::label(
+				&segment_name(segment),
+				if SegmentType::Unknown == segment.segment_type() { StrokeColor::EnabledOnBackground } else { StrokeColor::BodyOnBackground },
+				Cling::Left,
+			);
 			let subtitle = yard::label(&market_value(segment), StrokeColor::CommentOnBackground, Cling::Right);
 			let content = title.pack_bottom(1, subtitle);
 			(4, content.pad(1).pressable(SenderLink::ignore()))
