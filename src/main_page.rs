@@ -27,8 +27,16 @@ impl Spark for MainPage {
 	fn create(&self, create: &Create<Self::Action, Self::Report>) -> Self::State {
 		State {
 			active_tab: MainTab::Assets,
-			list_assets: yui::spark(ListAssets::new(&self.link), create.edge().clone(), None),
-			list_factions: yui::spark(ListFactions::new(&self.echo), create.edge().clone(), None),
+			list_assets: yui::spark(
+				ListAssets::new(&self.link),
+				create.edge().clone(),
+				None,
+			),
+			list_factions: yui::spark(
+				ListFactions { link: self.link.clone() },
+				create.edge().clone(),
+				None,
+			),
 		}
 	}
 

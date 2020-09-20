@@ -1,53 +1,48 @@
-use echo_lib::Echo;
+use chad_core::{Segment, SegmentType};
 use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Pack, Padding, SenderLink, Spark, yard};
 use yui::palette::StrokeColor;
 use yui::yard::Pressable;
 
-use crate::data::{Asset, read_factions};
-use crate::YardId;
+use crate::{ChadLink, YardId};
 
 #[derive(Debug)]
-pub struct ListFactions { echo: Echo }
-
-impl ListFactions { pub fn new(echo: &Echo) -> Self { ListFactions { echo: echo.clone() } } }
+pub struct ListFactions { pub link: ChadLink }
 
 impl Spark for ListFactions {
-	type State = Echo;
+	type State = Vec<Segment>;
 	type Action = ();
 	type Report = ();
 
-	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State { self.echo.clone() }
+	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State {
+		self.link.latest_portfolio().segments()
+	}
 
 	fn flow(&self, _action: Self::Action, _flow: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
 		AfterFlow::Ignore
 	}
 
 	fn render(state: &Self::State, _link: &SenderLink<Self::Action>) -> Option<ArcYard> {
-		let yard_result = state.chamber()
-			.and_then(|mut chamber| read_factions(&mut chamber))
-			.map(|factions| {
-				let items = factions.iter().map(|it| {
-					let title_line = yard::label(it.name().to_lowercase(), StrokeColor::BodyOnBackground, Cling::Left);
-					let subtitle_line = yard::label(&asset_count_string(&it.assets), StrokeColor::CommentOnBackground, Cling::Left);
-					let yard = title_line.pack_bottom(1, subtitle_line);
-					(4, yard.pad(1).pressable(SenderLink::ignore()))
-				}).collect::<Vec<_>>();
-				items
-			})
-			.map(|items| yard::list(YardId::FactionsList.as_i32(), 0, items));
-		let yard = match yard_result {
-			Ok(yard) => yard.confine_width(40, Cling::Center),
-			Err(e) => yard::label(&format!("Error: {}", e.to_string()), StrokeColor::CommentOnBackground, Cling::Center),
-		};
-		Some(yard)
+		let items = state.iter().enumerate().map(|(i, segment)| {
+			let title = yard::label(&segment_name(segment), StrokeColor::BodyOnBackground, Cling::Left);
+			let subtitle = yard::label(&market_value(segment), StrokeColor::CommentOnBackground, Cling::Right);
+			let content = title.pack_bottom(1, subtitle);
+			(4, content.pad(1).pressable(SenderLink::ignore()))
+		}).collect::<Vec<_>>();
+		let list = yard::list(YardId::FactionsList.as_i32(), 0, items);
+		Some(list.confine_width(40, Cling::Center))
 	}
 }
 
-fn asset_count_string(assets: &Vec<Asset>) -> String {
-	let asset_count = assets.len();
-	if asset_count == 1 {
-		"1 asset".to_string()
-	} else {
-		format!("{} assets", asset_count)
-	}
+fn segment_name(segment: &Segment) -> String {
+	match segment.segment_type() {
+		SegmentType::Liquid => "Cash",
+		SegmentType::Stable => "Coin",
+		SegmentType::Linear => "Income",
+		SegmentType::Expo => "Growth",
+		SegmentType::Unknown => "Unassigned",
+	}.to_string()
+}
+
+fn market_value(segment: &Segment) -> String {
+	format!("{} USD", segment.segment_value())
 }
