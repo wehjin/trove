@@ -1,20 +1,18 @@
+use chad_core::storage_link::StorageLink;
 use echo_lib::Echo;
 use yui::{AfterFlow, ArcYard, Before, Create, Flow, Pack, SenderLink, Spark, Story, yard};
 use yui::palette::FillColor;
 use yui::yard::Tab;
 
-use crate::{ChadLink, YardId};
 use crate::list_assets::ListAssets;
 use crate::list_factions::ListFactions;
+use crate::YardId;
 
 #[derive(Debug)]
-pub struct MainPage {
-	echo: Echo,
-	link: ChadLink,
-}
+pub struct MainPage { echo: Echo, link: StorageLink }
 
 impl MainPage {
-	pub fn new(echo: Echo, link: ChadLink) -> Self {
+	pub fn new(echo: Echo, link: StorageLink) -> Self {
 		MainPage { echo, link }
 	}
 }

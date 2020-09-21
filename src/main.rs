@@ -7,7 +7,7 @@ extern crate yui;
 
 use std::error::Error;
 
-pub use chad_core::Link as ChadLink;
+use chad_core::storage_link::connect_storage;
 use yui::app;
 
 use crate::main_page::MainPage;
@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	let chad_link = {
 		let mut data_folder = dirs::home_dir().expect("Home dir");
 		data_folder.push(".chad");
-		chad_core::connect(&data_folder)
+		connect_storage(&data_folder)
 	};
 	let echo = data::echo(".chad")?;
 	let main_page = MainPage::new(echo, chad_link);

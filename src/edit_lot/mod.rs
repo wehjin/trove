@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::ops::Index;
 
-use chad_core::{AssetCode, Lot, LotId, SegmentType};
+use chad_core::core::{AssetCode, LotId};
+use chad_core::portfolio::lot::Lot;
 use stringedit::{StringEdit, Validity};
 use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Pack, Padding, SenderLink, story, yard};
 use yui::palette::StrokeColor;
@@ -122,9 +123,8 @@ impl State {
 				lot_id: self.lot_id,
 				asset_code: AssetCode::Common(self.edits[&Field::Symbol].read().to_uppercase()),
 				share_count: self.edits[&Field::Shares].read().trim().parse::<f64>().unwrap(),
-				custodian: self.edits[&Field::Custodian].read(),
-				share_price: self.edits[&Field::Price].read().trim().parse::<f64>().unwrap(),
-				segment: SegmentType::Unknown,
+				custodian: chad_core::core::Custodian::Custom(self.edits[&Field::Custodian].read()),
+				account: chad_core::core::Account::Main,
 			};
 			Some(lot)
 		} else {

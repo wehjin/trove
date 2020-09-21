@@ -1,10 +1,16 @@
-use chad_core::{AssetCode, Lot};
+use std::collections::HashMap;
+
+use chad_core::core::{Amount, AssetCode};
+use chad_core::portfolio::holding::Holding;
+use chad_core::portfolio::lot::Lot;
+use chad_core::portfolio::Portfolio;
+use chad_core::storage_link::StorageLink;
 use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Padding, SenderLink, Spark, yard};
 use yui::palette::FillColor;
 use yui::yard::{ButtonState, Pressable};
 
-use crate::{ChadLink, YardId};
 use crate::edit_lot::EditLot;
+use crate::YardId;
 
 pub enum Action {
 	AddLot,
@@ -13,13 +19,13 @@ pub enum Action {
 }
 
 #[derive(Debug, Clone)]
-pub struct State { lots: Vec<Lot> }
+pub struct State { holdings: Vec<Holding>, prices: HashMap<AssetCode, Amount> }
 
 #[derive(Debug)]
-pub struct ListAssets { link: ChadLink }
+pub struct ListAssets { link: StorageLink }
 
 impl ListAssets {
-	pub fn new(link: &ChadLink) -> Self { ListAssets { link: link.clone() } }
+	pub fn new(link: &StorageLink) -> Self { ListAssets { link: link.clone() } }
 }
 
 impl Spark for ListAssets {
@@ -29,7 +35,7 @@ impl Spark for ListAssets {
 
 	fn create(&self, _create: &Create<Self::Action, Self::Report>) -> Self::State {
 		let portfolio = self.link.latest_portfolio();
-		State { lots: portfolio.lots() }
+		State { holdings: portfolio.holdings(), prices: portfolio.prices() }
 	}
 
 	fn flow(&self, action: Self::Action, flow: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
@@ -37,11 +43,13 @@ impl Spark for ListAssets {
 			Action::AddLot => {
 				let spark = EditLot { lot_id: rand::random(), start_values: Vec::new() };
 				flow.start_prequel(spark, flow.link().map(Action::WriteLot));
-				AfterFlow::Revise(State { lots: self.link.latest_portfolio().lots() })
+				let latest = self.link.latest_portfolio();
+				AfterFlow::Revise(State { holdings: latest.holdings(), prices: latest.prices() })
 			}
 			Action::WriteLot(lot) => {
-				self.link.update_lot(lot.lot_id, &lot.asset_code, lot.share_count, &lot.custodian, lot.share_price);
-				AfterFlow::Revise(State { lots: self.link.latest_portfolio().lots() })
+				self.link.update_lot(lot.lot_id, &lot.asset_code, lot.share_count, &lot.custodian);
+				let latest = self.link.latest_portfolio();
+				AfterFlow::Revise(State { holdings: latest.holdings(), prices: latest.prices() })
 			}
 			Action::ViewAsset(index) => AfterFlow::Ignore,
 		}
@@ -49,25 +57,28 @@ impl Spark for ListAssets {
 
 	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
 		let column_width = 40;
-		let yard = yard::list(YardId::AssetList.as_i32(), 0, list_items(&state.lots, link))
+		let yard = yard::list(YardId::AssetList.as_i32(), 0, list_items(&state.holdings, &state.prices, link))
 			.confine_width(column_width, Cling::Center)
 			.pad(1);
 		Some(yard)
 	}
 }
 
-fn list_items(lots: &Vec<Lot>, link: &SenderLink<Action>) -> Vec<(u8, ArcYard)> {
-	let mut lot_items = lots.iter()
+fn list_items(holdings: &Vec<Holding>, prices: &HashMap<AssetCode, Amount>, link: &SenderLink<Action>) -> Vec<(u8, ArcYard)> {
+	let mut items = holdings.iter()
 		.enumerate()
-		.map(|(index, lot)| {
+		.map(|(index, holding)| {
 			let quad_text = QuadText {
-				title: match &lot.asset_code {
+				title: match &holding.asset_code() {
 					AssetCode::Common(s) => s.to_owned(),
 					AssetCode::Custom(s) => s.to_owned(),
 				},
-				subtitle: format!("{}", lot.custodian),
-				value: format!("{:.2} units", lot.share_count),
-				subvalue: format!("{:.0} USD", lot.currency_value()),
+				subtitle: format!("{} lots", holding.lots.len()),
+				value: {
+					let share_count: Amount = holding.lots.iter().map(|it| it.share_count).sum();
+					format!("{:.2} units", share_count)
+				},
+				subvalue: format!("{:.0} USD", holding.holding_value(prices)),
 			};
 			let yard = quad_label(&quad_text)
 				.pad(1)
@@ -76,8 +87,8 @@ fn list_items(lots: &Vec<Lot>, link: &SenderLink<Action>) -> Vec<(u8, ArcYard)> 
 		})
 		.collect::<Vec<_>>();
 	let add_lot_button = yard::button("Add Lot", ButtonState::enabled(link.map(|_| Action::AddLot)));
-	lot_items.push((3, add_lot_button));
-	lot_items
+	items.push((3, add_lot_button));
+	items
 }
 
 #[derive(Debug, Clone)]
