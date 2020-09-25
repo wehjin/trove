@@ -45,7 +45,7 @@ impl Spark for PickSquadSpark {
 			let content = if squads.is_empty() {
 				button.confine_height(3, Cling::Center)
 			} else {
-				let mut items: Vec<(u8, ArcYard)> = squads.iter().map(|it| {
+				let items: Vec<(u8, ArcYard)> = squads.iter().map(|it| {
 					let yard = yard::label(&it.name, StrokeColor::BodyOnBackground, Cling::Center)
 						.pad_cols(1)
 						.pressable(link.map({
@@ -54,8 +54,8 @@ impl Spark for PickSquadSpark {
 						}));
 					(3, yard)
 				}).collect();
-				items.push((3, button));
-				yard::list(YardId::PickSquadList.as_i32(), 0, items)
+				let list = yard::list(YardId::PickSquadList.as_i32(), 0, items);
+				list.pack_bottom(3, button)
 			};
 			content
 		};
