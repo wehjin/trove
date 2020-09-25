@@ -7,27 +7,26 @@ extern crate yui;
 
 use std::error::Error;
 
-use chad_core::storage_link::connect_storage;
+use chad_core::chad::Chad;
 use yui::app;
 
-use crate::main_page::MainPage;
+use crate::pick_squad::PickSquadSpark;
 
 mod data;
+mod edit_squad;
 mod edit_lot;
 mod list_assets;
 mod view_asset;
 mod list_factions;
 mod main_page;
+mod pick_squad;
+
+const OWNER: u64 = 5000;
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let chad_link = {
-		let mut data_folder = dirs::home_dir().expect("Home dir");
-		data_folder.push(".chad");
-		connect_storage(&data_folder)
-	};
-	let echo = data::echo(".chad")?;
-	let main_page = MainPage::new(echo, chad_link);
-	app::run(main_page, None)?;
+	let chad = Chad::connect_tmp();
+	let pick_squad = PickSquadSpark { chad };
+	app::run(pick_squad, None)?;
 	Ok(())
 }
 
@@ -36,6 +35,9 @@ enum YardId {
 	FactionsTab,
 	FactionsList,
 	AssetList,
+	EditSquadList,
+	NameField,
+	PickSquadList,
 }
 
 impl YardId {
@@ -45,6 +47,9 @@ impl YardId {
 			YardId::FactionsTab => 701,
 			YardId::FactionsList => 702,
 			YardId::AssetList => 703,
+			YardId::EditSquadList => 704,
+			YardId::NameField => 705,
+			YardId::PickSquadList => 706,
 		}
 	}
 }
