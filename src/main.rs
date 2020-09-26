@@ -10,8 +10,6 @@ use std::error::Error;
 use chad_core::chad::Chad;
 use yui::app;
 
-use crate::pick_squad::PickSquadSpark;
-
 mod data;
 mod edit_squad;
 mod edit_lot;
@@ -25,8 +23,8 @@ const OWNER: u64 = 5000;
 
 fn main() -> Result<(), Box<dyn Error>> {
 	let chad = Chad::connect_tmp();
-	let pick_squad = PickSquadSpark { chad };
-	app::run(pick_squad, None)?;
+	let spark = pick_squad::Spark { chad };
+	app::run(spark, None)?;
 	Ok(())
 }
 
