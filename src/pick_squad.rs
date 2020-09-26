@@ -10,10 +10,15 @@ use crate::edit_squad::EditSquadSpark;
 #[derive(Clone, Debug)]
 pub struct Spark { pub chad: Chad }
 
+#[derive(Debug)]
 pub enum Action { AddSquad, SquadAdded(u64), PickSquad(u64) }
 
 #[derive(Clone, Debug)]
-pub struct State { pub squads: Vec<Squad>, pub pick: Option<u64> }
+pub struct State {
+	pub squads: Vec<Squad>,
+	pub pick: Option<u64>,
+	pub message: String,
+}
 
 impl yui::Spark for Spark {
 	type State = State;
@@ -24,7 +29,7 @@ impl yui::Spark for Spark {
 		let snap = self.chad.snap();
 		let squads = snap.squads(OWNER);
 		let pick = squads.first().map(|it| it.id);
-		State { squads, pick }
+		State { squads, pick, message: "".to_string() }
 	}
 
 	fn flow(&self, action: Self::Action, ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
@@ -39,10 +44,22 @@ impl yui::Spark for Spark {
 				let state = State {
 					squads: snap.squads(OWNER),
 					pick: Some(id),
+					message: "".to_string(),
 				};
 				AfterFlow::Revise(state)
 			}
-			Action::PickSquad(_id) => AfterFlow::Ignore,
+			Action::PickSquad(id) => {
+				let mut state = ctx.state().clone();
+				let squad_exists = state.squads.iter().any(|it| it.id == id);
+				if squad_exists {
+					state.message = "".to_string();
+					state.pick = Some(id);
+					AfterFlow::Revise(state)
+				} else {
+					state.message = format!("Invalid id: {}", id);
+					AfterFlow::Revise(state)
+				}
+			}
 		}
 	}
 
@@ -54,11 +71,11 @@ impl yui::Spark for Spark {
 			None => 0,
 		};
 		let content = {
-			if squads.is_empty() {
+			if selected >= squads.len() {
 				yard::label("Add a squad", StrokeColor::CommentOnBackground, Cling::Center)
 			} else {
-				let name = &squads[selected].name;
-				let title = yard::title(name, StrokeColor::BodyOnPrimary, Cling::LeftBottom);
+				let squad = &squads[selected];
+				let title = yard::title(&squad.name, StrokeColor::BodyOnPrimary, Cling::LeftBottom);
 				let header = title.pad(1).before(yard::fill(FillColor::Primary));
 				let content = {
 					let unspent = {
@@ -85,24 +102,27 @@ impl yui::Spark for Spark {
 		};
 		let side = {
 			let button = yard::button("Add Squad", ButtonState::enabled(link.map(|_| Action::AddSquad)));
-			let content = if state.squads.is_empty() {
+			if state.squads.is_empty() {
 				button.confine_height(3, Cling::Center)
 			} else {
-				let items: Vec<(u8, ArcYard)> = squads.iter().map(|it| {
-					let yard = yard::label(&it.name, StrokeColor::BodyOnBackground, Cling::Center)
-						.pad_cols(1)
-						.pressable(link.map({
-							let id = it.id;
-							move |_| Action::PickSquad(id)
-						}));
-					(3, yard)
-				}).collect();
+				let items: Vec<(u8, ArcYard)> = squads.iter()
+					.map(|it| {
+						let squad_id = it.id;
+						let squad_name = format!("{}", it.name);
+						let yard = yard::label(squad_name, StrokeColor::BodyOnBackground, Cling::Center)
+							.pad_cols(1)
+							.pressable(link.map(move |_| Action::PickSquad(squad_id)));
+						(3, yard)
+					}).collect();
 				let list = yard::list(YardId::PickSquadList.as_i32(), selected, items);
 				list.pack_bottom(3, button)
-			};
-			content
+			}
 		};
 		let yard = content.pack_left(30, side);
-		Some(yard)
+		if state.message.is_empty() {
+			Some(yard)
+		} else {
+			Some(yard.pack_bottom(2, yard::label(&state.message, StrokeColor::BodyOnBackground, Cling::LeftBottom)))
+		}
 	}
 }
