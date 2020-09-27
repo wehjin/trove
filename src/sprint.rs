@@ -1,4 +1,8 @@
 pub fn amount(amount: f64) -> String {
+	amount_prefix(amount, "$")
+}
+
+pub fn amount_prefix(amount: f64, prefix: &str) -> String {
 	let is_positive = amount >= 0.0;
 	let mut amount = amount.abs();
 	let mut shift_count = 0usize;
@@ -13,11 +17,11 @@ pub fn amount(amount: f64) -> String {
 		format!("e{}", shift_count)
 	};
 	let pos_amount = if amount < 10.0 {
-		format!("${:.02}{}", amount, suffix)
+		format!("{}{:.02}{}", prefix, amount, suffix)
 	} else if amount < 100.0 {
-		format!("${:.01}{}", amount, suffix)
+		format!("{}{:.01}{}", prefix, amount, suffix)
 	} else {
-		format!("${:.00}{}", amount, suffix)
+		format!("{}{:.00}{}", prefix, amount, suffix)
 	};
 	if is_positive { pos_amount } else { format!("({})", pos_amount) }
 }

@@ -1,10 +1,9 @@
 use chad_core::chad::Chad;
 use stringedit::{StringEdit, Validity};
-use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Pack, Padding, SenderLink, Spark, StringEditAction, yard};
-use yui::palette::StrokeColor;
+use yui::{AfterFlow, ArcYard, Create, Flow, SenderLink, Spark, StringEditAction, yard};
 use yui::yard::ButtonState;
 
-use crate::YardId;
+use crate::{render, YardId};
 
 pub struct EditSquadSpark {
 	pub(crate) chad: Chad,
@@ -46,24 +45,21 @@ impl Spark for EditSquadSpark {
 	}
 
 	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
-		let title = yard::title("Add Squad", StrokeColor::BodyOnBackground, Cling::LeftTop);
 		let trellis = yard::list(
 			YardId::EditSquadList.as_i32(),
 			0,
 			vec![(3, yard::textfield(YardId::NameField.as_i32(), "Name", state.clone(), link.map(Action::NameAction))), ],
 		);
-		let close = yard::button("Close", ButtonState::enabled(link.map(|_| Action::Close)));
-		let submit = {
+		let render = render::dialog(
+			"Add Squad",
+			link.map(|_| Action::Close),
 			if state.is_valid() {
-				yard::button("Submit", ButtonState::enabled(link.map(|_| Action::Submit)))
+				ButtonState::enabled(link.map(|_| Action::Submit))
 			} else {
-				yard::button("Submit", ButtonState::disabled())
-			}
-		};
-		let yard = trellis
-			.pack_top(4, title)
-			.pack_right(12, close.confine(11, 1, Cling::RightTop))
-			.pack_bottom(2, submit.confine(16, 1, Cling::Bottom));
-		Some(yard.pad(2))
+				ButtonState::disabled()
+			},
+			trellis,
+		);
+		Some(render)
 	}
 }

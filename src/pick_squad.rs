@@ -17,7 +17,7 @@ pub struct State {
 #[derive(Debug)]
 pub enum Action {
 	AddMember(u64),
-	MemberAdded((u64, u64)),
+	MemberAdded((u64, String)),
 	AddSquad,
 	SquadAdded(u64),
 	PickSquad(u64),
@@ -41,7 +41,7 @@ impl yui::Spark for Spark {
 	fn flow(&self, action: Self::Action, ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
 		match action {
 			Action::AddMember(squad_id) => {
-				let spark = edit_member::Spark { squad_id };
+				let spark = edit_member::Spark { chad: self.chad.clone(), squad_id };
 				ctx.start_prequel(spark, ctx.link().map(Action::MemberAdded));
 				AfterFlow::Ignore
 			}
@@ -106,15 +106,26 @@ impl yui::Spark for Spark {
 							.pack_left(label_text.len() as i32, label)
 					};
 					let members = {
-						let label = yard::label("Members", StrokeColor::CommentOnBackground, Cling::LeftBottom);
-						let list = yard::label("No members", StrokeColor::CommentOnBackground, Cling::Center);
+						let member_count = squad.members.len();
+						let label_text = format!("Members ({})", member_count);
+						let label = yard::label(label_text, StrokeColor::CommentOnBackground, Cling::LeftBottom);
+						let member_list = if member_count == 0 {
+							yard::label("No members", StrokeColor::CommentOnBackground, Cling::Center)
+						} else {
+							let items = squad.members.iter()
+								.enumerate()
+								.rev()
+								.map(|(index, it)| {
+									(4, render::member_summary(it, index))
+								}).collect();
+							yard::list(YardId::SquadMembersList.as_i32(), 0, items)
+						};
 						let button_text = "Add Member";
 						let button = yard::button(button_text, ButtonState::enabled(link.map({
 							let squad_id = squad.id;
 							move |_| Action::AddMember(squad_id)
 						})));
-						list
-							.pack_top(4, render::member_summary())
+						member_list
 							.pack_top(1, label)
 							.pack_bottom(3, button)
 					};

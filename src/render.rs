@@ -1,14 +1,21 @@
+use chad_core::core::SquadMember;
 use yui::{ArcYard, Cling, Confine, Pack, Padding, SenderLink, yard};
 use yui::palette::StrokeColor;
-use yui::yard::Pressable;
+use yui::yard::{ButtonState, Pressable};
 
-pub fn member_summary() -> ArcYard {
-	let symbol = format!("SQ");
-	let rank = format!("Rank 5 (50%)");
-	let drift = format!("$3.3M Over");
-	let motion = format!("Sell 20");
-	let market_value = format!("$10.8M");
-	let target_value = format!("\\_$7.5M");
+use crate::sprint;
+
+pub fn member_summary(member: &SquadMember, index: usize) -> ArcYard {
+	let symbol = format!("{}", member.symbol);
+	let shares = 0.0;
+	let price = member.price;
+	let market_amount = shares * price;
+	let target_amount = 8500000.0;
+	let drift_amount = market_amount - target_amount;
+	let rank = format!("Rank {} (50%)", index + 1);
+	let drift = format!("{} {}", sprint::amount(drift_amount.abs()), if drift_amount.is_sign_positive() { "Over" } else { "Under" });
+	let transact_shares = if price == 0.0 { "??".to_string() } else { sprint::amount_prefix(drift_amount.abs() / price, "") };
+	let motion = format!("{} {}", if drift_amount.is_sign_positive() { "Sell" } else { "Buy" }, transact_shares);
 	let left = yard::label(symbol, StrokeColor::BodyOnBackground, Cling::LeftBottom)
 		.pack_bottom(
 			1,
@@ -19,13 +26,33 @@ pub fn member_summary() -> ArcYard {
 			1,
 			yard::label(motion, StrokeColor::CommentOnBackground, Cling::RightTop),
 		);
-	let center = yard::label(market_value, StrokeColor::BodyOnBackground, Cling::LeftBottom)
-		.pack_bottom(
-			1,
-			yard::label(target_value, StrokeColor::CommentOnBackground, Cling::RightTop),
-		).confine_width(10, Cling::Center);
+	let center = {
+		let (top, bottom) = if drift_amount.is_sign_positive() {
+			let top = yard::label(sprint::amount(market_amount), StrokeColor::BodyOnBackground, Cling::LeftBottom);
+			let bottom = yard::label(format!("\\_{}", sprint::amount(target_amount)), StrokeColor::CommentOnBackground, Cling::RightTop);
+			(top, bottom)
+		} else {
+			let top = yard::label(format!("{}", sprint::amount(target_amount)), StrokeColor::CommentOnBackground, Cling::RightTop);
+			let bottom = yard::label(format!("{}_/", sprint::amount(market_amount)), StrokeColor::BodyOnBackground, Cling::LeftBottom);
+			(top, bottom)
+		};
+		top.pack_bottom(1, bottom).confine_width(10, Cling::Center)
+	};
 	let full = center
 		.pack_left(12, left)
 		.pack_right(12, right);
 	full.pad(1).pressable(SenderLink::ignore()).confine_width(50, Cling::Custom { x: 0.1, y: 0.5 })
+}
+
+pub fn dialog(title: &str, close_link: SenderLink<()>, submit_button_state: ButtonState, content: ArcYard) -> ArcYard {
+	const LEFT_COLS: i32 = 7;
+	let close = yard::button("x", ButtonState::default(close_link.map(|_| ())));
+	let title = yard::title(title, StrokeColor::BodyOnBackground, Cling::LeftBottom).pack_top(1, yard::empty());
+	let submit = yard::button(
+		"Submit",
+		submit_button_state,
+	);
+	let header = title.pad_cols(2).pack_left(LEFT_COLS, close).pack_right(14, submit);
+	let content = content.pad(1).pack_left(LEFT_COLS, yard::empty());
+	content.pack_top(3, header)
 }
