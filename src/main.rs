@@ -12,6 +12,7 @@ use yui::app;
 
 mod edit_squad;
 mod pick_squad;
+mod edit_member;
 pub(crate) mod sprint;
 pub(crate) mod render;
 

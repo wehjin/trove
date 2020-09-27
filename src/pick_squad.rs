@@ -4,14 +4,8 @@ use yui::{AfterFlow, ArcYard, Before, Cling, Confine, Create, Flow, Pack, Paddin
 use yui::palette::{FillColor, StrokeColor};
 use yui::yard::{ButtonState, Pressable};
 
-use crate::{OWNER, render, sprint, YardId};
+use crate::{edit_member, OWNER, render, sprint, YardId};
 use crate::edit_squad::EditSquadSpark;
-
-#[derive(Clone, Debug)]
-pub struct Spark { pub chad: Chad }
-
-#[derive(Debug)]
-pub enum Action { AddSquad, SquadAdded(u64), PickSquad(u64) }
 
 #[derive(Clone, Debug)]
 pub struct State {
@@ -19,6 +13,18 @@ pub struct State {
 	pub pick: Option<u64>,
 	pub message: String,
 }
+
+#[derive(Debug)]
+pub enum Action {
+	AddMember(u64),
+	MemberAdded((u64, u64)),
+	AddSquad,
+	SquadAdded(u64),
+	PickSquad(u64),
+}
+
+#[derive(Clone, Debug)]
+pub struct Spark { pub chad: Chad }
 
 impl yui::Spark for Spark {
 	type State = State;
@@ -34,6 +40,18 @@ impl yui::Spark for Spark {
 
 	fn flow(&self, action: Self::Action, ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
 		match action {
+			Action::AddMember(squad_id) => {
+				let spark = edit_member::Spark { squad_id };
+				ctx.start_prequel(spark, ctx.link().map(Action::MemberAdded));
+				AfterFlow::Ignore
+			}
+			Action::MemberAdded((squad_id, _member_id)) => {
+				let snap = self.chad.snap();
+				let mut state = ctx.state().clone();
+				state.squads = snap.squads(OWNER);
+				state.pick = Some(squad_id);
+				AfterFlow::Revise(state)
+			}
 			Action::AddSquad => {
 				let spark = EditSquadSpark { chad: self.chad.clone(), owner: OWNER };
 				ctx.start_prequel(spark, ctx.link().map(Action::SquadAdded));
@@ -91,7 +109,10 @@ impl yui::Spark for Spark {
 						let label = yard::label("Members", StrokeColor::CommentOnBackground, Cling::LeftBottom);
 						let list = yard::label("No members", StrokeColor::CommentOnBackground, Cling::Center);
 						let button_text = "Add Member";
-						let button = yard::button(button_text, ButtonState::enabled(SenderLink::ignore()));
+						let button = yard::button(button_text, ButtonState::enabled(link.map({
+							let squad_id = squad.id;
+							move |_| Action::AddMember(squad_id)
+						})));
 						list
 							.pack_top(4, render::member_summary())
 							.pack_top(1, label)
