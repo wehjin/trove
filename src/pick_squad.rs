@@ -4,7 +4,7 @@ use yui::{AfterFlow, ArcYard, Before, Cling, Confine, Create, Flow, Pack, Paddin
 use yui::palette::{FillColor, StrokeColor};
 use yui::yard::{ButtonState, Pressable};
 
-use crate::{OWNER, YardId};
+use crate::{OWNER, sprint, YardId};
 use crate::edit_squad::EditSquadSpark;
 
 #[derive(Clone, Debug)]
@@ -81,8 +81,8 @@ impl yui::Spark for Spark {
 					let unspent = {
 						let label_text = "Unspent: ";
 						let label = yard::label(label_text, StrokeColor::CommentOnBackground, Cling::Left);
-						let button_text = "$0.00K";
-						let button = yard::button(button_text, ButtonState::default(SenderLink::ignore()));
+						let button_text = sprint::amount(squad.unspent);
+						let button = yard::button(&button_text, ButtonState::default(SenderLink::ignore()));
 						yard::empty()
 							.pack_left(button_text.len() as i32 + 6, button)
 							.pack_left(label_text.len() as i32, label)

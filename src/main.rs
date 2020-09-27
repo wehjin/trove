@@ -10,14 +10,9 @@ use std::error::Error;
 use chad_core::chad::Chad;
 use yui::app;
 
-mod data;
 mod edit_squad;
-mod edit_lot;
-mod list_assets;
-mod view_asset;
-mod list_factions;
-mod main_page;
 mod pick_squad;
+pub(crate) mod sprint;
 
 const OWNER: u64 = 5000;
 
@@ -29,10 +24,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 enum YardId {
-	AssetsTab,
-	FactionsTab,
-	FactionsList,
-	AssetList,
 	EditSquadList,
 	NameField,
 	PickSquadList,
@@ -41,10 +32,6 @@ enum YardId {
 impl YardId {
 	pub fn as_i32(&self) -> i32 {
 		match self {
-			YardId::AssetsTab => 700,
-			YardId::FactionsTab => 701,
-			YardId::FactionsList => 702,
-			YardId::AssetList => 703,
 			YardId::EditSquadList => 704,
 			YardId::NameField => 705,
 			YardId::PickSquadList => 706,
