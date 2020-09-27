@@ -4,7 +4,7 @@ use yui::{AfterFlow, ArcYard, Before, Cling, Confine, Create, Flow, Pack, Paddin
 use yui::palette::{FillColor, StrokeColor};
 use yui::yard::{ButtonState, Pressable};
 
-use crate::{OWNER, sprint, YardId};
+use crate::{OWNER, render, sprint, YardId};
 use crate::edit_squad::EditSquadSpark;
 
 #[derive(Clone, Debug)]
@@ -92,7 +92,9 @@ impl yui::Spark for Spark {
 						let list = yard::label("No members", StrokeColor::CommentOnBackground, Cling::Center);
 						let button_text = "Add Member";
 						let button = yard::button(button_text, ButtonState::enabled(SenderLink::ignore()));
-						list.pack_top(1, label)
+						list
+							.pack_top(4, render::member_summary())
+							.pack_top(1, label)
 							.pack_bottom(3, button)
 					};
 					members.pack_top(3, unspent)

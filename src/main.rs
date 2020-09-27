@@ -13,6 +13,7 @@ use yui::app;
 mod edit_squad;
 mod pick_squad;
 pub(crate) mod sprint;
+pub(crate) mod render;
 
 const OWNER: u64 = 5000;
 
