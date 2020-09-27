@@ -48,11 +48,9 @@ pub fn dialog(title: &str, close_link: SenderLink<()>, submit_button_state: Butt
 	const LEFT_COLS: i32 = 7;
 	let close = yard::button("x", ButtonState::default(close_link.map(|_| ())));
 	let title = yard::title(title, StrokeColor::BodyOnBackground, Cling::LeftBottom).pack_top(1, yard::empty());
-	let submit = yard::button(
-		"Submit",
-		submit_button_state,
-	);
-	let header = title.pad_cols(2).pack_left(LEFT_COLS, close).pack_right(14, submit);
+	let submit = yard::button("Submit", submit_button_state);
+	let header = title.pad_cols(2).pack_left(LEFT_COLS, close);
+	let footer = submit.confine(14, 3, Cling::Top);
 	let content = content.pad(1).pack_left(LEFT_COLS, yard::empty());
-	content.pack_top(3, header)
+	content.pack_top(3, header).pack_bottom(4, footer)
 }
