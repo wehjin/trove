@@ -1,9 +1,9 @@
-use chad_core::core::SquadMember;
-use yui::{ArcYard, Cling, Confine, Pack, Padding, SenderLink, yard};
-use yui::palette::StrokeColor;
+use chad_core::core::{Squad, SquadMember};
+use yui::{ArcYard, Before, Cling, Confine, Pack, Padding, SenderLink, yard};
+use yui::palette::{FillColor, StrokeColor};
 use yui::yard::{ButtonState, Pressable};
 
-use crate::sprint;
+use crate::{sprint, YardId};
 
 pub fn member_summary(member: &SquadMember, index: usize) -> ArcYard {
 	let symbol = format!("{}", member.symbol);
@@ -42,6 +42,44 @@ pub fn member_summary(member: &SquadMember, index: usize) -> ArcYard {
 		.pack_left(12, left)
 		.pack_right(12, right);
 	full.pad(1).pressable(SenderLink::ignore()).confine_width(50, Cling::Custom { x: 0.1, y: 0.5 })
+}
+
+pub fn squad(squad: &Squad, add_member_link: SenderLink<()>) -> ArcYard {
+	let title = yard::title(&squad.name, StrokeColor::BodyOnPrimary, Cling::LeftBottom);
+	let header = title.pad(1).before(yard::fill(FillColor::Primary));
+	let content = {
+		let unspent = {
+			let label_text = "Unspent: ";
+			let label = yard::label(label_text, StrokeColor::CommentOnBackground, Cling::Left);
+			let button_text = sprint::amount(squad.unspent);
+			let button = yard::button(&button_text, ButtonState::default(SenderLink::ignore()));
+			yard::empty()
+				.pack_left(button_text.len() as i32 + 6, button)
+				.pack_left(label_text.len() as i32, label)
+		};
+		let members = {
+			let member_count = squad.members.len();
+			let label_text = format!("Members ({})", member_count);
+			let label = yard::label(label_text, StrokeColor::CommentOnBackground, Cling::LeftBottom);
+			let list = if member_count == 0 {
+				yard::label("No members", StrokeColor::CommentOnBackground, Cling::Center)
+			} else {
+				let items = squad.members.iter()
+					.enumerate()
+					.rev()
+					.map(|(index, it)| {
+						(4, member_summary(it, index))
+					}).collect();
+				yard::list(YardId::SquadMembersList.as_i32(), 0, items)
+			};
+			let button = yard::button("Add Member", ButtonState::enabled(add_member_link.map(|_| ())));
+			list
+				.pack_top(1, label)
+				.pack_bottom(3, button)
+		};
+		members.pack_top(3, unspent)
+	}.pad(1);
+	content.pack_top(4, header)
 }
 
 pub fn dialog(title: &str, close_link: SenderLink<()>, submit_button_state: ButtonState, content: ArcYard) -> ArcYard {

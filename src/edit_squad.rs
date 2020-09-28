@@ -32,15 +32,13 @@ impl Spark for EditSquadSpark {
 				let name_edit = ctx.state().edit(action);
 				AfterFlow::Revise(name_edit)
 			}
-			Action::Submit => {
-				if ctx.state().is_valid() {
-					let id = rand::random();
-					self.chad.add_squad(id, &ctx.state().chars.iter().cloned().collect::<String>().trim(), self.owner);
-					AfterFlow::Close(Some(id))
-				} else {
-					AfterFlow::Ignore
-				}
-			}
+			Action::Submit => if ctx.state().is_valid() {
+				let id = rand::random();
+				self.chad.add_squad(id, &ctx.state().chars.iter().cloned().collect::<String>().trim(), self.owner);
+				AfterFlow::Close(Some(id))
+			} else {
+				AfterFlow::Ignore
+			},
 		}
 	}
 
