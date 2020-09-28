@@ -5,6 +5,26 @@ use yui::yard::{ButtonState, Pressable};
 
 use crate::{sprint, YardId};
 
+pub fn member_view(member: &SquadMember, squad: &Squad) -> ArcYard {
+	let header = yard::title(&member.symbol, StrokeColor::BodyOnPrimary, Cling::Left)
+		.pad(1).before(yard::fill(FillColor::Primary));
+	let content = {
+		let lots = squad.lots.iter().filter(|it| it.symbol == member.symbol).collect::<Vec<_>>();
+		let shares = lots.iter().map(|it| it.shares).sum::<f64>();
+		let shares_label = yard::label(format!("{} Shares", sprint::amount_prefix(shares, "")), StrokeColor::BodyOnBackground, Cling::Left);
+		let market_value = shares * squad.prices[&member.symbol];
+		let market_label = yard::label(format!("{} Market Value", sprint::amount(market_value)), StrokeColor::BodyOnBackground, Cling::Left);
+		let lots_label = yard::label(format!("Lots ({})", lots.len()), StrokeColor::CommentOnBackground, Cling::Left);
+		let button = yard::button("Add Lot", ButtonState::enabled(SenderLink::ignore()));
+		yard::empty()
+			.pack_top(2, lots_label.confine_height(1, Cling::Top))
+			.pack_top(2, market_label.confine_height(1, Cling::Top))
+			.pack_top(2, shares_label.confine_height(1, Cling::Top))
+			.pack_bottom(3, button.confine(13, 1, Cling::Center))
+	};
+	content.pad(1).pack_top(4, header)
+}
+
 pub fn member_summary(member: &SquadMember, index: usize, select_link: SenderLink<(u64, String)>) -> ArcYard {
 	let symbol = format!("{}", member.symbol);
 	let shares = 0.0;

@@ -105,7 +105,11 @@ impl yui::Spark for Spark {
 						move |(squad_id, symbol)| Action::PickMember(squad_id, symbol)
 					}),
 				),
-				Some(member) => yard::label(member, StrokeColor::BodyOnBackground, Cling::Center),
+				Some(member) => {
+					let index = squad.members.iter().position(|it| &it.symbol == member).expect("Member index");
+					let member = &squad.members[index];
+					render::member_view(member, &squad)
+				}
 			},
 		};
 		let side = {
