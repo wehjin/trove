@@ -20,7 +20,7 @@ pub fn member_view(member: &SquadMember, squad: &Squad) -> ArcYard {
 			.pack_top(2, lots_label.confine_height(1, Cling::Top))
 			.pack_top(2, market_label.confine_height(1, Cling::Top))
 			.pack_top(2, shares_label.confine_height(1, Cling::Top))
-			.pack_bottom(3, button.confine(13, 1, Cling::Center))
+			.pack_bottom(3, button.confine(13, 3, Cling::Top))
 	};
 	content.pad(1).pack_top(4, header)
 }
