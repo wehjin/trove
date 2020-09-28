@@ -5,7 +5,7 @@ use yui::yard::{ButtonState, Pressable};
 
 use crate::{sprint, YardId};
 
-pub fn member_summary(member: &SquadMember, index: usize) -> ArcYard {
+pub fn member_summary(member: &SquadMember, index: usize, select_link: SenderLink<(u64, String)>) -> ArcYard {
 	let symbol = format!("{}", member.symbol);
 	let shares = 0.0;
 	let price = member.price;
@@ -41,10 +41,17 @@ pub fn member_summary(member: &SquadMember, index: usize) -> ArcYard {
 	let full = center
 		.pack_left(12, left)
 		.pack_right(12, right);
-	full.pad(1).pressable(SenderLink::ignore()).confine_width(50, Cling::Custom { x: 0.1, y: 0.5 })
+	full
+		.pad(1)
+		.pressable(select_link.map({
+			let squad_id = member.squad_id;
+			let symbol = member.symbol.to_string();
+			move |_| (squad_id, symbol.clone())
+		}))
+		.confine_width(50, Cling::Custom { x: 0.1, y: 0.5 })
 }
 
-pub fn squad(squad: &Squad, add_member_link: SenderLink<()>) -> ArcYard {
+pub fn squad(squad: &Squad, add_member_link: SenderLink<()>, view_member_link: SenderLink<(u64, String)>) -> ArcYard {
 	let title = yard::title(&squad.name, StrokeColor::BodyOnPrimary, Cling::LeftBottom);
 	let header = title.pad(1).before(yard::fill(FillColor::Primary));
 	let content = {
@@ -64,12 +71,10 @@ pub fn squad(squad: &Squad, add_member_link: SenderLink<()>) -> ArcYard {
 			let list = if member_count == 0 {
 				yard::label("No members", StrokeColor::CommentOnBackground, Cling::Center)
 			} else {
-				let items = squad.members.iter()
-					.enumerate()
-					.rev()
-					.map(|(index, it)| {
-						(4, member_summary(it, index))
-					}).collect();
+				let items = squad.members.iter().enumerate().rev().map(|(index, it)| {
+					let rendering = member_summary(it, index, view_member_link.clone());
+					(4, rendering)
+				}).collect();
 				yard::list(YardId::SquadMembersList.as_i32(), 0, items)
 			};
 			let button = yard::button("Add Member", ButtonState::enabled(add_member_link.map(|_| ())));

@@ -20,6 +20,7 @@ pub enum Action {
 	AddSquad,
 	SquadAdded(u64),
 	PickSquad(u64),
+	PickMember(u64, String),
 }
 
 #[derive(Clone, Debug)]
@@ -67,12 +68,18 @@ impl yui::Spark for Spark {
 			Action::PickSquad(id) => {
 				let mut state = ctx.state().clone();
 				let squad_exists = state.squads.iter().any(|it| it.id == id);
-				if squad_exists {
-					state.pick = Some((id, None));
-					AfterFlow::Revise(state)
-				} else {
-					AfterFlow::Revise(state)
+				match squad_exists {
+					true => {
+						state.pick = Some((id, None));
+						AfterFlow::Revise(state)
+					}
+					false => AfterFlow::Ignore,
 				}
+			}
+			Action::PickMember(squad_id, symbol) => {
+				let mut state = ctx.state().clone();
+				state.pick = Some((squad_id, Some(symbol)));
+				AfterFlow::Revise(state)
 			}
 		}
 	}
@@ -80,17 +87,26 @@ impl yui::Spark for Spark {
 	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
 		let mut squads = state.squads.clone();
 		squads.sort_by_key(|it| it.name.to_owned());
-		let selected = match &state.pick {
-			Some((id, _member)) => squads.iter().position(|it| it.id == *id).unwrap_or(0),
-			None => 0,
+		let (selected, member) = match &state.pick {
+			Some((id, member)) => (squads.iter().position(|it| it.id == *id).unwrap_or(0), member),
+			None => (0, &None),
 		};
 		let squad = if selected < squads.len() { Some(&squads[selected]) } else { None };
 		let content = match squad {
 			None => yard::label("Add a squad", StrokeColor::CommentOnBackground, Cling::Center),
-			Some(squad) => render::squad(squad, link.map({
-				let squad_id = squad.id;
-				move |_| Action::AddMember(squad_id)
-			})),
+			Some(squad) => match member {
+				None => render::squad(
+					squad,
+					link.map({
+						let squad_id = squad.id;
+						move |_| Action::AddMember(squad_id)
+					}),
+					link.map({
+						move |(squad_id, symbol)| Action::PickMember(squad_id, symbol)
+					}),
+				),
+				Some(member) => yard::label(member, StrokeColor::BodyOnBackground, Cling::Center),
+			},
 		};
 		let side = {
 			let button = yard::button("Add Squad", ButtonState::enabled(link.map(|_| Action::AddSquad)));
