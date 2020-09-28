@@ -10,7 +10,7 @@ use crate::edit_squad::EditSquadSpark;
 #[derive(Clone, Debug)]
 pub struct State {
 	pub squads: Vec<Squad>,
-	pub picked_squad: Option<u64>,
+	pub pick: Option<(u64, Option<String>)>,
 }
 
 #[derive(Debug)]
@@ -33,8 +33,8 @@ impl yui::Spark for Spark {
 	fn create(&self, _ctx: &Create<Self::Action, Self::Report>) -> Self::State {
 		let snap = self.chad.snap();
 		let squads = snap.squads(OWNER);
-		let pick = squads.first().map(|it| it.id);
-		State { squads, picked_squad: pick }
+		let pick = squads.first().map(|it| it.id).map(|it| (it, None));
+		State { squads, pick }
 	}
 
 	fn flow(&self, action: Self::Action, ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
@@ -48,7 +48,7 @@ impl yui::Spark for Spark {
 				let snap = self.chad.snap();
 				let mut state = ctx.state().clone();
 				state.squads = snap.squads(OWNER);
-				state.picked_squad = Some(squad_id);
+				state.pick = Some((squad_id, None));
 				AfterFlow::Revise(state)
 			}
 			Action::AddSquad => {
@@ -60,7 +60,7 @@ impl yui::Spark for Spark {
 				let snap = self.chad.snap();
 				let state = State {
 					squads: snap.squads(OWNER),
-					picked_squad: Some(id),
+					pick: Some((id, None)),
 				};
 				AfterFlow::Revise(state)
 			}
@@ -68,7 +68,7 @@ impl yui::Spark for Spark {
 				let mut state = ctx.state().clone();
 				let squad_exists = state.squads.iter().any(|it| it.id == id);
 				if squad_exists {
-					state.picked_squad = Some(id);
+					state.pick = Some((id, None));
 					AfterFlow::Revise(state)
 				} else {
 					AfterFlow::Revise(state)
@@ -80,20 +80,17 @@ impl yui::Spark for Spark {
 	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
 		let mut squads = state.squads.clone();
 		squads.sort_by_key(|it| it.name.to_owned());
-		let selected = match state.picked_squad {
-			Some(id) => squads.iter().position(|it| it.id == id).unwrap_or(0),
+		let selected = match &state.pick {
+			Some((id, _member)) => squads.iter().position(|it| it.id == *id).unwrap_or(0),
 			None => 0,
 		};
-		let content = {
-			if selected >= squads.len() {
-				yard::label("Add a squad", StrokeColor::CommentOnBackground, Cling::Center)
-			} else {
-				let squad = &squads[selected];
-				render::squad(&squad, link.map({
-					let squad_id = squad.id;
-					move |_| Action::AddMember(squad_id)
-				}))
-			}
+		let squad = if selected < squads.len() { Some(&squads[selected]) } else { None };
+		let content = match squad {
+			None => yard::label("Add a squad", StrokeColor::CommentOnBackground, Cling::Center),
+			Some(squad) => render::squad(squad, link.map({
+				let squad_id = squad.id;
+				move |_| Action::AddMember(squad_id)
+			})),
 		};
 		let side = {
 			let button = yard::button("Add Squad", ButtonState::enabled(link.map(|_| Action::AddSquad)));
