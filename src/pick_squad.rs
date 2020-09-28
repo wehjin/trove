@@ -10,8 +10,7 @@ use crate::edit_squad::EditSquadSpark;
 #[derive(Clone, Debug)]
 pub struct State {
 	pub squads: Vec<Squad>,
-	pub pick: Option<u64>,
-	pub message: String,
+	pub picked_squad: Option<u64>,
 }
 
 #[derive(Debug)]
@@ -35,7 +34,7 @@ impl yui::Spark for Spark {
 		let snap = self.chad.snap();
 		let squads = snap.squads(OWNER);
 		let pick = squads.first().map(|it| it.id);
-		State { squads, pick, message: "".to_string() }
+		State { squads, picked_squad: pick }
 	}
 
 	fn flow(&self, action: Self::Action, ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
@@ -49,7 +48,7 @@ impl yui::Spark for Spark {
 				let snap = self.chad.snap();
 				let mut state = ctx.state().clone();
 				state.squads = snap.squads(OWNER);
-				state.pick = Some(squad_id);
+				state.picked_squad = Some(squad_id);
 				AfterFlow::Revise(state)
 			}
 			Action::AddSquad => {
@@ -61,8 +60,7 @@ impl yui::Spark for Spark {
 				let snap = self.chad.snap();
 				let state = State {
 					squads: snap.squads(OWNER),
-					pick: Some(id),
-					message: "".to_string(),
+					picked_squad: Some(id),
 				};
 				AfterFlow::Revise(state)
 			}
@@ -70,11 +68,9 @@ impl yui::Spark for Spark {
 				let mut state = ctx.state().clone();
 				let squad_exists = state.squads.iter().any(|it| it.id == id);
 				if squad_exists {
-					state.message = "".to_string();
-					state.pick = Some(id);
+					state.picked_squad = Some(id);
 					AfterFlow::Revise(state)
 				} else {
-					state.message = format!("Invalid id: {}", id);
 					AfterFlow::Revise(state)
 				}
 			}
@@ -84,7 +80,7 @@ impl yui::Spark for Spark {
 	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
 		let mut squads = state.squads.clone();
 		squads.sort_by_key(|it| it.name.to_owned());
-		let selected = match state.pick {
+		let selected = match state.picked_squad {
 			Some(id) => squads.iter().position(|it| it.id == id).unwrap_or(0),
 			None => 0,
 		};
@@ -153,10 +149,6 @@ impl yui::Spark for Spark {
 			}
 		};
 		let yard = content.pack_left(30, side);
-		if state.message.is_empty() {
-			Some(yard)
-		} else {
-			Some(yard.pack_bottom(2, yard::label(&state.message, StrokeColor::BodyOnBackground, Cling::LeftBottom)))
-		}
+		Some(yard)
 	}
 }
