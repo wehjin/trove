@@ -5,7 +5,7 @@ use yui::yard::{ButtonState, Pressable};
 
 use crate::{sprint, YardId};
 
-pub fn member_view(member: &SquadMember, squad: &Squad) -> ArcYard {
+pub fn member_view(member: &SquadMember, squad: &Squad, add_lot: SenderLink<()>) -> ArcYard {
 	let header = yard::title(&member.symbol, StrokeColor::BodyOnPrimary, Cling::Left)
 		.pad(1).before(yard::fill(FillColor::Primary));
 	let content = {
@@ -15,7 +15,7 @@ pub fn member_view(member: &SquadMember, squad: &Squad) -> ArcYard {
 		let market_value = shares * squad.prices[&member.symbol];
 		let market_label = yard::label(format!("{} Market Value", sprint::amount(market_value)), StrokeColor::BodyOnBackground, Cling::Left);
 		let lots_label = yard::label(format!("Lots ({})", lots.len()), StrokeColor::CommentOnBackground, Cling::Left);
-		let button = yard::button("Add Lot", ButtonState::enabled(SenderLink::ignore()));
+		let button = yard::button("Add Lot", ButtonState::default(add_lot.map(|_| ())));
 		yard::empty()
 			.pack_top(2, lots_label.confine_height(1, Cling::Top))
 			.pack_top(2, market_label.confine_height(1, Cling::Top))

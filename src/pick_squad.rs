@@ -4,7 +4,7 @@ use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Pack, Padding, Sende
 use yui::palette::StrokeColor;
 use yui::yard::{ButtonState, Pressable};
 
-use crate::{edit_member, OWNER, render, YardId};
+use crate::{add_lot, edit_member, OWNER, render, YardId};
 use crate::edit_squad::EditSquadSpark;
 
 #[derive(Clone, Debug)]
@@ -17,6 +17,8 @@ pub struct State {
 pub enum Action {
 	AddMember(u64),
 	MemberAdded((u64, String)),
+	AddLot(u64, String),
+	LotAdded((u64, String, u64)),
 	AddSquad,
 	SquadAdded(u64),
 	PickSquad(u64),
@@ -40,6 +42,18 @@ impl yui::Spark for Spark {
 
 	fn flow(&self, action: Self::Action, ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
 		match action {
+			Action::AddLot(squad_id, member_symbol) => {
+				let spark = add_lot::Spark { chad: self.chad.clone(), squad_id, member_symbol };
+				ctx.start_prequel(spark, ctx.link().map(Action::LotAdded));
+				AfterFlow::Ignore
+			}
+			Action::LotAdded((squad_id, member_symbol, _lot_id)) => {
+				let snap = self.chad.snap();
+				let mut state = ctx.state().clone();
+				state.squads = snap.squads(OWNER);
+				state.pick = Some((squad_id, Some(member_symbol)));
+				AfterFlow::Revise(state)
+			}
 			Action::AddMember(squad_id) => {
 				let spark = edit_member::Spark { chad: self.chad.clone(), squad_id };
 				ctx.start_prequel(spark, ctx.link().map(Action::MemberAdded));
@@ -108,7 +122,11 @@ impl yui::Spark for Spark {
 				Some(member) => {
 					let index = squad.members.iter().position(|it| &it.symbol == member).expect("Member index");
 					let member = &squad.members[index];
-					render::member_view(member, &squad)
+					render::member_view(member, &squad, link.map({
+						let squad_id = squad.id;
+						let member_symbol = member.symbol.to_owned();
+						move |_| Action::AddLot(squad_id, member_symbol.clone())
+					}))
 				}
 			},
 		};
