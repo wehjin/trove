@@ -19,7 +19,12 @@ pub(crate) mod render;
 const OWNER: u64 = 5000;
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let chad = Chad::connect_tmp();
+	let data_dir = {
+		let mut dir = dirs::home_dir().expect("Home exists");
+		dir.push(format!(".{}", APP_NAME));
+		dir
+	};
+	let chad = Chad::connect(&data_dir);
 	let spark = pick_squad::Spark { chad };
 	app::run(spark, None)?;
 	Ok(())
@@ -46,3 +51,8 @@ impl YardId {
 		}
 	}
 }
+
+#[cfg(debug_assertions)]
+const APP_NAME: &str = "chad-debug";
+#[cfg(not(debug_assertions))]
+const APP_NAME: &str = "chad";
