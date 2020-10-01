@@ -32,6 +32,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 enum YardId {
+	LotAccountEdit,
+	LotSharesEdit,
 	MemberSymbolEdit,
 	MemberPriceEdit,
 	SquadMembersList,
@@ -43,12 +45,14 @@ enum YardId {
 impl YardId {
 	pub fn as_i32(&self) -> i32 {
 		match self {
-			YardId::MemberSymbolEdit => 701,
-			YardId::MemberPriceEdit => 702,
-			YardId::SquadMembersList => 703,
-			YardId::EditSquadList => 704,
-			YardId::NameField => 705,
-			YardId::PickSquadList => 706,
+			YardId::LotAccountEdit => 701,
+			YardId::LotSharesEdit => 702,
+			YardId::MemberSymbolEdit => 703,
+			YardId::MemberPriceEdit => 704,
+			YardId::SquadMembersList => 705,
+			YardId::EditSquadList => 706,
+			YardId::NameField => 707,
+			YardId::PickSquadList => 708,
 		}
 	}
 }
