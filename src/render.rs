@@ -103,7 +103,8 @@ pub fn squad(squad: &Squad, add_member_link: SenderLink<()>, view_member_link: S
 			} else {
 				let shares = squad.shares();
 				let items = squad.members.iter().enumerate().rev().map(|(index, member)| {
-					member_summary(member, index, shares[&member.symbol], view_member_link.clone())
+					let shares = *shares.get(&member.symbol).unwrap_or(&0.0);
+					member_summary(member, index, shares, view_member_link.clone())
 				}).collect();
 				yard::list(YardId::SquadMembersList.as_i32(), 0, items)
 			};
