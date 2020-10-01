@@ -40,6 +40,7 @@ enum YardId {
 	EditSquadList,
 	NameField,
 	PickSquadList,
+	MemberLotList,
 }
 
 impl YardId {
@@ -53,6 +54,7 @@ impl YardId {
 			YardId::EditSquadList => 706,
 			YardId::NameField => 707,
 			YardId::PickSquadList => 708,
+			YardId::MemberLotList => 709,
 		}
 	}
 }

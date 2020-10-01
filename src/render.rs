@@ -1,28 +1,41 @@
-use chad_core::core::{Squad, SquadMember};
+use chad_core::core::{Lot, Squad, SquadMember};
 use yui::{ArcYard, Before, Cling, Confine, Pack, Padding, SenderLink, yard};
 use yui::palette::{FillColor, StrokeColor};
 use yui::yard::{ButtonState, Pressable};
 
 use crate::{sprint, YardId};
+use crate::sprint::amount_prefix;
 
-pub fn member_view(member: &SquadMember, squad: &Squad, add_lot: SenderLink<()>) -> ArcYard {
-	let header = yard::title(&member.symbol, StrokeColor::BodyOnPrimary, Cling::Left)
-		.pad(1).before(yard::fill(FillColor::Primary));
-	let content = {
-		let lots = squad.lots.iter().filter(|it| it.symbol == member.symbol).collect::<Vec<_>>();
+pub fn lot_summary(lot: &Lot) -> (u8, ArcYard) {
+	(1, yard::label(&format!("{} shares in {} account", amount_prefix(lot.shares, ""), &lot.account), StrokeColor::BodyOnBackground, Cling::Left))
+}
+
+pub fn member_view(member: &SquadMember, squad: &Squad, add_lot_link: SenderLink<()>) -> ArcYard {
+	let lots = squad.lots.iter().filter(|it| it.symbol == member.symbol).collect::<Vec<_>>();
+	let header = {
+		let title = yard::title(&member.symbol, StrokeColor::BodyOnPrimary, Cling::Left);
 		let shares = lots.iter().map(|it| it.shares).sum::<f64>();
-		let shares_label = yard::label(format!("{} Shares", sprint::amount_prefix(shares, "")), StrokeColor::BodyOnBackground, Cling::Left);
+		let shares_label = yard::label(format!("Shares: {}", sprint::amount_prefix(shares, "")), StrokeColor::BodyOnPrimary, Cling::LeftBottom);
 		let market_value = shares * squad.prices[&member.symbol];
-		let market_label = yard::label(format!("{} Market Value", sprint::amount(market_value)), StrokeColor::BodyOnBackground, Cling::Left);
-		let lots_label = yard::label(format!("Lots ({})", lots.len()), StrokeColor::CommentOnBackground, Cling::Left);
-		let button = yard::button("Add Lot", ButtonState::default(add_lot.map(|_| ())));
-		yard::empty()
-			.pack_top(2, lots_label.confine_height(1, Cling::Top))
-			.pack_top(2, market_label.confine_height(1, Cling::Top))
-			.pack_top(2, shares_label.confine_height(1, Cling::Top))
-			.pack_bottom(3, button.confine(13, 3, Cling::Top))
+		let market_label = yard::label(format!("Market value: {}", sprint::amount(market_value)), StrokeColor::BodyOnPrimary, Cling::Left);
+		let front = title
+			.pack_bottom(2, shares_label)
+			.pack_bottom(1, market_label)
+			.pad(1);
+		front.before(yard::fill(FillColor::Primary))
 	};
-	content.pad(1).pack_top(4, header)
+	let content = {
+		let lots_label = yard::label(format!("Lots ({})", lots.len()), StrokeColor::CommentOnBackground, Cling::Left);
+		let lot_list = if lots.is_empty() {
+			yard::label("No Lots", StrokeColor::CommentOnBackground, Cling::Center)
+		} else {
+			let lot_items = lots.into_iter().map(lot_summary).collect();
+			yard::list(YardId::MemberLotList.as_i32(), 0, lot_items)
+		}.pack_top(2, lots_label.confine_height(1, Cling::Top));
+		let add_button = yard::button("Add Lot", ButtonState::default(add_lot_link.map(|_| ())));
+		lot_list.pack_bottom(3, add_button.confine(13, 3, Cling::Top))
+	};
+	content.pad(1).pack_top(7, header)
 }
 
 pub fn member_summary(member: &SquadMember, index: usize, select_link: SenderLink<(u64, String)>) -> ArcYard {
