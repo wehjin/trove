@@ -16,6 +16,7 @@ mod edit_member;
 mod add_lot;
 pub(crate) mod sprint;
 pub(crate) mod render;
+pub(crate) mod compute;
 
 const OWNER: u64 = 5000;
 
