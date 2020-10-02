@@ -1,4 +1,4 @@
-use chad_core::core::{Lot, Squad, SquadMember};
+use chad_core::core::{DriftReport, Lot, Squad, SquadMember};
 use yui::{ArcYard, Before, Cling, Confine, Pack, Padding, SenderLink, yard};
 use yui::palette::{FillColor, StrokeColor};
 use yui::yard::{ButtonState, Pressable};
@@ -25,7 +25,7 @@ pub fn member_view(member: &SquadMember, squad: &Squad, add_lot_link: SenderLink
 		front.before(yard::fill(FillColor::Primary))
 	};
 	let content = {
-		let lots_label = yard::label(format!("Lots ({})", lots.len()), StrokeColor::CommentOnBackground, Cling::Left);
+		let lots_label = yard::label(format!("Lots ({})", lots.len()), StrokeColor::BodyOnBackground, Cling::Left);
 		let lot_list = if lots.is_empty() {
 			yard::label("No Lots", StrokeColor::CommentOnBackground, Cling::Center)
 		} else {
@@ -38,34 +38,43 @@ pub fn member_view(member: &SquadMember, squad: &Squad, add_lot_link: SenderLink
 	content.pad(1).pack_top(7, header)
 }
 
-pub fn member_summary(member: &SquadMember, index: usize, shares: f64, select_link: SenderLink<(u64, String)>) -> (u8, ArcYard) {
-	let symbol = format!("{}", member.symbol);
-	let price = member.price;
-	let market_amount = shares * price;
-	let target_amount = 8500000.0;
-	let drift_amount = market_amount - target_amount;
-	let rank = format!("R{} (50%)", index + 1);
-	let drift = format!("{} {}", sprint::amount(drift_amount.abs()), if drift_amount.is_sign_positive() { "Over" } else { "Under" });
-	let transact_shares = if price == 0.0 { "??".to_string() } else { sprint::amount_prefix(drift_amount.abs() / price, "") };
-	let motion = format!("~{} sh", transact_shares);
-	let left = yard::label(symbol, StrokeColor::BodyOnBackground, Cling::LeftBottom)
-		.pack_bottom(
-			1,
-			yard::label(rank, StrokeColor::CommentOnBackground, Cling::LeftTop),
-		);
-	let right = yard::label(drift, StrokeColor::BodyOnBackground, Cling::RightBottom)
-		.pack_bottom(
-			1,
-			yard::label(motion, StrokeColor::CommentOnBackground, Cling::RightTop),
-		);
+pub fn drift_summary(report: &DriftReport, select_link: SenderLink<(u64, String)>) -> (u8, ArcYard) {
+	let drift_amount = report.drift_amount();
+	let left = {
+		let symbol = format!("{}", report.symbol());
+		let rank = format!("R{} ({}%)", report.rank, sprint::amount_prefix(report.target_portion * 100.0, ""));
+		yard::label(symbol, StrokeColor::BodyOnBackground, Cling::LeftBottom)
+			.pack_bottom(
+				1,
+				yard::label(rank, StrokeColor::CommentOnBackground, Cling::LeftTop),
+			)
+	};
+	let right = {
+		let drift = format!("{} {}", sprint::amount(drift_amount.abs()), if drift_amount.is_sign_positive() { "Over" } else { "Under" });
+		let motion = match report.drift_shares() {
+			None => "??".to_string(),
+			Some(drift_shares) => {
+				if drift_shares.is_sign_negative() {
+					format!("+={} sh", sprint::amount_prefix(drift_shares.abs(), ""))
+				} else {
+					format!("-={} sh", sprint::amount_prefix(drift_shares.abs(), ""))
+				}
+			}
+		};
+		let top = yard::label(drift, StrokeColor::BodyOnBackground, Cling::RightBottom);
+		let bottom = yard::label(motion, StrokeColor::BodyOnBackground, Cling::RightTop);
+		top.pack_bottom(1, bottom)
+	};
 	let center = {
+		let market_value = report.market_value;
+		let target_value = report.target_value;
 		let (top, bottom) = if drift_amount.is_sign_positive() {
-			let top = yard::label(sprint::amount(market_amount), StrokeColor::BodyOnBackground, Cling::LeftBottom);
-			let bottom = yard::label(format!("\\- {}", sprint::amount(target_amount)), StrokeColor::CommentOnBackground, Cling::RightTop);
+			let top = yard::label(sprint::amount(market_value), StrokeColor::BodyOnBackground, Cling::LeftBottom);
+			let bottom = yard::label(format!("\\- {}", sprint::amount(target_value)), StrokeColor::CommentOnBackground, Cling::RightTop);
 			(top, bottom)
 		} else {
-			let top = yard::label(format!("{}", sprint::amount(target_amount)), StrokeColor::CommentOnBackground, Cling::RightTop);
-			let bottom = yard::label(format!("{} -/", sprint::amount(market_amount)), StrokeColor::BodyOnBackground, Cling::LeftBottom);
+			let top = yard::label(format!("{}", sprint::amount(target_value)), StrokeColor::CommentOnBackground, Cling::RightTop);
+			let bottom = yard::label(format!("{} -/", sprint::amount(market_value)), StrokeColor::BodyOnBackground, Cling::LeftBottom);
 			(top, bottom)
 		};
 		top.pack_bottom(1, bottom).confine_width(10, Cling::Center)
@@ -74,8 +83,8 @@ pub fn member_summary(member: &SquadMember, index: usize, shares: f64, select_li
 		.pack_left(12, left)
 		.pack_right(12, right);
 	let cell = content.pad(1).pressable(select_link.map({
-		let squad_id = member.squad_id;
-		let symbol = member.symbol.to_string();
+		let squad_id = report.member.squad_id;
+		let symbol = report.symbol().to_string();
 		move |_| (squad_id, symbol.clone())
 	})).confine_width(50, Cling::Custom { x: 0.1, y: 0.5 });
 	(4, cell)
@@ -87,7 +96,7 @@ pub fn squad(squad: &Squad, add_member_link: SenderLink<()>, view_member_link: S
 	let content = {
 		let unspent = {
 			let label_text = "Unspent: ";
-			let label = yard::label(label_text, StrokeColor::CommentOnBackground, Cling::Left);
+			let label = yard::label(label_text, StrokeColor::BodyOnBackground, Cling::Left);
 			let button_text = sprint::amount(squad.unspent);
 			let button = yard::button(&button_text, ButtonState::default(SenderLink::ignore()));
 			yard::empty()
@@ -97,14 +106,12 @@ pub fn squad(squad: &Squad, add_member_link: SenderLink<()>, view_member_link: S
 		let members = {
 			let member_count = squad.members.len();
 			let label_text = format!("Members ({})", member_count);
-			let label = yard::label(label_text, StrokeColor::CommentOnBackground, Cling::LeftBottom);
+			let label = yard::label(label_text, StrokeColor::BodyOnBackground, Cling::LeftBottom);
 			let list = if member_count == 0 {
 				yard::label("No members", StrokeColor::CommentOnBackground, Cling::Center)
 			} else {
-				let shares = squad.shares();
-				let items = squad.members.iter().enumerate().rev().map(|(index, member)| {
-					let shares = *shares.get(&member.symbol).unwrap_or(&0.0);
-					member_summary(member, index, shares, view_member_link.clone())
+				let items = squad.drift_reports().iter().rev().map(|report| {
+					drift_summary(report, view_member_link.clone())
 				}).collect();
 				yard::list(YardId::SquadMembersList.as_i32(), 0, items)
 			};

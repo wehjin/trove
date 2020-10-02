@@ -50,7 +50,7 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 [[package]]
 name = "chad-core"
 version = "0.1.0"
-source = "git+https://github.com/wehjin/chad-core.git#84945a20a6cd4722592d7d5fca459581435b1efa"
+source = "git+https://github.com/wehjin/chad-core.git#d1743ae63c56eaa0ff9236ff3e7bb9d589908b3c"
 dependencies = [
  "echo-lib",
  "rand",
