@@ -90,7 +90,7 @@ pub fn drift_summary(report: &DriftReport, select_link: SenderLink<(u64, String)
 	(4, cell)
 }
 
-pub fn squad(squad: &Squad, add_member_link: SenderLink<()>, view_member_link: SenderLink<(u64, String)>) -> ArcYard {
+pub fn squad(squad: &Squad, add_member_link: SenderLink<()>, view_member_link: SenderLink<(u64, String)>, set_unspent_link: SenderLink<(u64, Option<f64>)>) -> ArcYard {
 	let title = yard::title(&squad.name, StrokeColor::BodyOnPrimary, Cling::LeftBottom);
 	let header = title.pad(1).before(yard::fill(FillColor::Primary));
 	let content = {
@@ -98,7 +98,11 @@ pub fn squad(squad: &Squad, add_member_link: SenderLink<()>, view_member_link: S
 			let label_text = "Unspent: ";
 			let label = yard::label(label_text, StrokeColor::BodyOnBackground, Cling::Left);
 			let button_text = sprint::amount(squad.unspent);
-			let button = yard::button(&button_text, ButtonState::default(SenderLink::ignore()));
+			let button = yard::button(&button_text, ButtonState::default(set_unspent_link.map({
+				let squad_id = squad.id;
+				let unspent = if squad.unspent == 0.0 { None } else { Some(squad.unspent) };
+				move |_| (squad_id, unspent)
+			})));
 			yard::empty()
 				.pack_left(button_text.len() as i32 + 6, button)
 				.pack_left(label_text.len() as i32, label)

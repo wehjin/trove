@@ -11,8 +11,9 @@ use chad_core::chad::Chad;
 use yui::app;
 
 mod edit_squad;
-mod pick_squad;
 mod edit_member;
+mod edit_unspent;
+mod pick_squad;
 mod add_lot;
 pub(crate) mod sprint;
 pub(crate) mod render;
@@ -42,6 +43,7 @@ enum YardId {
 	NameField,
 	PickSquadList,
 	MemberLotList,
+	UnspentEdit,
 }
 
 impl YardId {
@@ -56,6 +58,7 @@ impl YardId {
 			YardId::NameField => 707,
 			YardId::PickSquadList => 708,
 			YardId::MemberLotList => 709,
+			YardId::UnspentEdit => 710,
 		}
 	}
 }
