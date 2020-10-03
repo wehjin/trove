@@ -107,6 +107,7 @@ impl yui::Spark for Spark {
 	}
 
 	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
+		const SIDE_WIDTH: i32 = 21;
 		let mut squads = state.squads.clone();
 		squads.sort_by_key(|it| it.name.to_owned());
 		let (selected, member) = match &state.pick {
@@ -155,7 +156,7 @@ impl yui::Spark for Spark {
 				list.pack_bottom(3, button)
 			}
 		};
-		let yard = content.pack_left(30, side);
+		let yard = content.pack_left(SIDE_WIDTH, side);
 		Some(yard)
 	}
 }
