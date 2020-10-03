@@ -49,7 +49,6 @@ impl yui::Spark for Spark {
 			Action::Submit => {
 				let string = ctx.state().string_edit.chars.iter().cloned().collect::<String>();
 				let unspent = string.parse::<f64>().expect("parse f64");
-				eprintln!("Setting unspent to {}", unspent);
 				self.chad.set_unspent(self.squad_id, unspent);
 				AfterFlow::Close(Some((self.squad_id, unspent)))
 			}
