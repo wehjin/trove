@@ -130,11 +130,16 @@ impl yui::Spark for Spark {
 				Some(member) => {
 					let index = squad.members.iter().position(|it| &it.symbol == member).expect("Member index");
 					let member = &squad.members[index];
-					render::member_view(member, &squad, link.map({
-						let squad_id = squad.id;
-						let member_symbol = member.symbol.to_owned();
-						move |_| Action::AddLot(squad_id, member_symbol.clone())
-					}))
+					render::member_view(
+						member,
+						&squad,
+						link.map({
+							let squad_id = squad.id;
+							let member_symbol = member.symbol.to_owned();
+							move |_| Action::AddLot(squad_id, member_symbol.clone())
+						}),
+						SenderLink::ignore(),
+					)
 				}
 			},
 		};

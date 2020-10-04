@@ -6,11 +6,14 @@ use yui::yard::{ButtonState, Pressable};
 use crate::{sprint, YardId};
 use crate::sprint::amount_prefix;
 
-pub fn lot_summary(lot: &Lot) -> (u8, ArcYard) {
-	(1, yard::label(&format!("{} shares in {} account", amount_prefix(lot.shares, ""), &lot.account), StrokeColor::BodyOnBackground, Cling::Left))
+pub fn lot_summary(lot: &Lot, select_link: SenderLink<()>) -> (u8, ArcYard) {
+	let text = format!("{} shares in {} account", amount_prefix(lot.shares, ""), &lot.account);
+	let yard = yard::label(&text, StrokeColor::BodyOnBackground, Cling::Left)
+		.pressable(select_link.map(|_| ()));
+	(1, yard)
 }
 
-pub fn member_view(member: &SquadMember, squad: &Squad, add_lot_link: SenderLink<()>) -> ArcYard {
+pub fn member_view(member: &SquadMember, squad: &Squad, add_lot_link: SenderLink<()>, select_lot_link: SenderLink<(u64, String, u64)>) -> ArcYard {
 	let lots = squad.lots.iter().filter(|it| it.symbol == member.symbol).collect::<Vec<_>>();
 	let header = {
 		let title = yard::title(&member.symbol, StrokeColor::BodyOnPrimary, Cling::Left);
@@ -29,7 +32,10 @@ pub fn member_view(member: &SquadMember, squad: &Squad, add_lot_link: SenderLink
 		let lot_list = if lots.is_empty() {
 			yard::label("No Lots", StrokeColor::CommentOnBackground, Cling::Center)
 		} else {
-			let lot_items = lots.into_iter().map(lot_summary).collect();
+			let lot_items = lots.into_iter().map(|it| {
+				let path = (it.squad_id, it.symbol.to_string(), it.id);
+				lot_summary(it, select_lot_link.map(move |_| path.clone()))
+			}).collect();
 			yard::list(YardId::MemberLotList.as_i32(), 0, lot_items)
 		}.pack_top(2, lots_label.confine_height(1, Cling::Top));
 		let add_button = yard::button("Add Lot", ButtonState::default(add_lot_link.map(|_| ())));
