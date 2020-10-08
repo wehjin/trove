@@ -13,7 +13,7 @@ pub fn lot_summary(lot: &Lot, select_link: SenderLink<()>) -> (u8, ArcYard) {
 	(1, yard)
 }
 
-pub fn member_view(member: &SquadMember, squad: &Squad, add_lot_link: SenderLink<()>, select_lot_link: SenderLink<(u64, String, u64)>) -> ArcYard {
+pub fn member_view(member: &SquadMember, squad: &Squad, lot_link: SenderLink<(u64, String, Option<u64>)>) -> ArcYard {
 	let lots = squad.lots.iter().filter(|it| it.symbol == member.symbol).collect::<Vec<_>>();
 	let header = {
 		let title = yard::title(&member.symbol, StrokeColor::BodyOnPrimary, Cling::Left);
@@ -32,13 +32,19 @@ pub fn member_view(member: &SquadMember, squad: &Squad, add_lot_link: SenderLink
 		let lot_list = if lots.is_empty() {
 			yard::label("No Lots", StrokeColor::CommentOnBackground, Cling::Center)
 		} else {
-			let lot_items = lots.into_iter().map(|it| {
-				let path = (it.squad_id, it.symbol.to_string(), it.id);
-				lot_summary(it, select_lot_link.map(move |_| path.clone()))
-			}).collect();
+			let lot_items = lots.into_iter()
+				.map(|it| lot_summary(it, lot_link.map({
+					let path = (it.squad_id, it.symbol.to_string(), Some(it.id));
+					move |_| path.clone()
+				})))
+				.collect();
 			yard::list(YardId::MemberLotList.as_i32(), 0, lot_items)
 		}.pack_top(2, lots_label.confine_height(1, Cling::Top));
-		let add_button = yard::button("Add Lot", ButtonState::default(add_lot_link.map(|_| ())));
+
+		let add_button = yard::button("Add Lot", ButtonState::default(lot_link.map({
+			let path = (member.squad_id, member.symbol.clone(), None);
+			move |_| path.clone()
+		})));
 		lot_list.pack_bottom(3, add_button.confine(13, 3, Cling::Top))
 	};
 	content.pad(1).pack_top(7, header)

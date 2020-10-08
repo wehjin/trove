@@ -4,7 +4,7 @@ use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Pack, Padding, Sende
 use yui::palette::StrokeColor;
 use yui::yard::{ButtonState, Pressable};
 
-use crate::{add_lot, edit_member, edit_unspent, OWNER, render, YardId};
+use crate::{edit_lot, edit_member, edit_unspent, OWNER, render, YardId};
 use crate::edit_squad::EditSquadSpark;
 
 #[derive(Clone, Debug)]
@@ -21,8 +21,7 @@ pub enum Action {
 	AddMember(u64),
 	MemberAdded((u64, String)),
 	PickMember(u64, String),
-	AddLot(u64, String),
-	LotAdded((u64, String, u64)),
+	EditLot((u64, String, Option<u64>)),
 	SetUnspent((u64, Option<f64>)),
 }
 
@@ -77,22 +76,17 @@ impl yui::Spark for Spark {
 				state.pick = Some((squad_id, None));
 				AfterFlow::Revise(state)
 			}
-			Action::PickMember(squad_id, symbol) => {
-				let mut state = ctx.state().clone();
-				state.pick = Some((squad_id, Some(symbol)));
-				AfterFlow::Revise(state)
-			}
-			Action::AddLot(squad_id, member_symbol) => {
-				let spark = add_lot::Spark { chad: self.chad.clone(), squad_id, member_symbol };
-				ctx.start_prequel(spark, ctx.link().map(Action::LotAdded));
-				AfterFlow::Ignore
-			}
-			Action::LotAdded((squad_id, member_symbol, _lot_id)) => {
+			Action::PickMember(squad_id, member_symbol) => {
 				let snap = self.chad.snap();
 				let mut state = ctx.state().clone();
 				state.squads = snap.squads(OWNER);
 				state.pick = Some((squad_id, Some(member_symbol)));
 				AfterFlow::Revise(state)
+			}
+			Action::EditLot((squad_id, member_symbol, lot_id)) => {
+				let spark = edit_lot::Spark { chad: self.chad.clone(), squad_id, member_symbol, lot_id };
+				ctx.start_prequel(spark, ctx.link().map(|(squad_id, symbol, _)| Action::PickMember(squad_id, symbol)));
+				AfterFlow::Ignore
 			}
 			Action::SetUnspent((squad_id, unspent)) => {
 				let spark = edit_unspent::Spark {
@@ -130,16 +124,7 @@ impl yui::Spark for Spark {
 				Some(member) => {
 					let index = squad.members.iter().position(|it| &it.symbol == member).expect("Member index");
 					let member = &squad.members[index];
-					render::member_view(
-						member,
-						&squad,
-						link.map({
-							let squad_id = squad.id;
-							let member_symbol = member.symbol.to_owned();
-							move |_| Action::AddLot(squad_id, member_symbol.clone())
-						}),
-						SenderLink::ignore(),
-					)
+					render::member_view(member, &squad, link.map(Action::EditLot))
 				}
 			},
 		};

@@ -4,12 +4,13 @@ use yui::{AfterFlow, ArcYard, Cling, Create, Flow, Pack, SenderLink, StringEdit,
 use yui::palette::StrokeColor;
 use yui::yard::ButtonState;
 
-use crate::render;
+use crate::{OWNER, render};
 use crate::YardId::{LotAccountEdit, LotSharesEdit};
 
 #[derive(Clone, Debug)]
 pub struct State {
 	symbol: String,
+	add_lot: bool,
 	account_edit: StringEdit,
 	shares_edit: StringEdit,
 }
@@ -26,6 +27,7 @@ pub struct Spark {
 	pub chad: Chad,
 	pub squad_id: u64,
 	pub member_symbol: String,
+	pub lot_id: Option<u64>,
 }
 
 impl yui::Spark for Spark {
@@ -34,10 +36,19 @@ impl yui::Spark for Spark {
 	type Report = (u64, String, u64);
 
 	fn create(&self, _ctx: &Create<Self::Action, Self::Report>) -> Self::State {
+		let (init_account, init_shares) = match self.lot_id {
+			None => ("".to_string(), "".to_string()),
+			Some(lot_id) => {
+				let squad = self.chad.snap().squads(OWNER).into_iter().find(|it| it.id == self.squad_id).expect("Squad exists");
+				let lot = squad.lots.into_iter().find(|it| it.id == lot_id).expect("Lot exists");
+				(lot.account.clone(), format!("{}", lot.shares))
+			}
+		};
 		State {
 			symbol: self.member_symbol.to_owned(),
-			account_edit: StringEdit::new("", 0, Validity::NotEmpty),
-			shares_edit: StringEdit::new("", 0, Validity::Double),
+			add_lot: self.lot_id.is_none(),
+			account_edit: StringEdit::new(init_account.clone(), init_account.len(), Validity::NotEmpty),
+			shares_edit: StringEdit::new(init_shares.clone(), init_shares.len(), Validity::Double),
 		}
 	}
 
@@ -48,7 +59,7 @@ impl yui::Spark for Spark {
 				if ctx.state().is_valid() {
 					let account = ctx.state().account_edit.chars.iter().cloned().collect::<String>().trim().to_owned();
 					let shares = ctx.state().shares_edit.chars.iter().cloned().collect::<String>().parse::<f64>().expect("Float in shares_edit");
-					let lot_id = rand::random();
+					let lot_id = self.lot_id.unwrap_or_else(rand::random);
 					self.chad.add_lot(self.squad_id, lot_id, &self.member_symbol, &account, shares);
 					let report = (self.squad_id, self.member_symbol.to_owned(), lot_id);
 					AfterFlow::Close(Some(report))
@@ -62,7 +73,7 @@ impl yui::Spark for Spark {
 	}
 
 	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
-		let title = format!("Add Lot");
+		let title = if state.add_lot { format!("Add Lot") } else { format!("Edit Lot") };
 		let content = yard::trellis(3, 1, Cling::Top, vec![
 			yard::textfield(LotAccountEdit.as_i32(), "Account", state.account_edit.clone(), link.map(Action::EditAccount)),
 			yard::textfield(LotSharesEdit.as_i32(), "Shares", state.shares_edit.clone(), link.map(Action::EditShares)),

@@ -14,7 +14,7 @@ mod edit_squad;
 mod edit_member;
 mod edit_unspent;
 mod pick_squad;
-mod add_lot;
+mod edit_lot;
 pub(crate) mod sprint;
 pub(crate) mod render;
 pub(crate) mod compute;
