@@ -54,7 +54,7 @@ pub fn drift_summary(report: &DriftReport, select_link: SenderLink<(u64, String)
 	let drift_amount = report.drift_amount();
 	let left = {
 		let symbol = format!("{}", report.symbol());
-		let rank = format!("R{} ({}%)", report.rank, sprint::amount_prefix(report.target_portion * 100.0, ""));
+		let rank = format!("R{}({}%)", report.rank, sprint::amount_prefix(report.target_portion * 100.0, ""));
 		yard::label(symbol, StrokeColor::BodyOnBackground, Cling::LeftBottom)
 			.pack_bottom(
 				1,
