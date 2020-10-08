@@ -62,8 +62,14 @@ pub fn drift_summary(report: &DriftReport, select_link: SenderLink<(u64, String)
 			)
 	};
 	let right = {
-		let drift = format!("{} {}", sprint::amount(drift_amount.abs()), if drift_amount.is_sign_positive() { "Over" } else { "Under" });
-		let motion = match report.drift_shares() {
+		let relative_drift = {
+			if drift_amount.is_sign_positive() {
+				format!("{} {}", "Over", sprint::amount(drift_amount.abs()))
+			} else {
+				format!("{} {}", "Under", sprint::amount(drift_amount.abs()))
+			}
+		};
+		let shares_motion = match report.drift_shares() {
 			None => "??".to_string(),
 			Some(drift_shares) => {
 				if drift_shares.is_sign_negative() {
@@ -73,8 +79,17 @@ pub fn drift_summary(report: &DriftReport, select_link: SenderLink<(u64, String)
 				}
 			}
 		};
-		let top = yard::label(drift, StrokeColor::BodyOnBackground, Cling::RightBottom);
-		let bottom = yard::label(motion, StrokeColor::BodyOnBackground, Cling::RightTop);
+		let (top, bottom) = if drift_amount.is_sign_positive() {
+			(
+				yard::label(relative_drift, StrokeColor::BodyOnBackground, Cling::RightBottom),
+				yard::label(shares_motion, StrokeColor::CommentOnBackground, Cling::RightTop)
+			)
+		} else {
+			(
+				yard::label(shares_motion, StrokeColor::CommentOnBackground, Cling::RightTop),
+				yard::label(relative_drift, StrokeColor::BodyOnBackground, Cling::RightBottom)
+			)
+		};
 		top.pack_bottom(1, bottom)
 	};
 	let center = {
@@ -141,13 +156,20 @@ pub fn squad(squad: &Squad, add_member_link: SenderLink<()>, view_member_link: S
 	content.pack_top(4, header)
 }
 
-pub fn dialog(title: &str, close_link: SenderLink<()>, submit_button_state: ButtonState, content: ArcYard) -> ArcYard {
+pub fn dialog(title: &str, close_link: SenderLink<()>, submit_button_state: ButtonState, delete_link: Option<SenderLink<()>>, content: ArcYard) -> ArcYard {
 	const LEFT_COLS: i32 = 7;
 	let close = yard::button("x", ButtonState::default(close_link.map(|_| ())));
 	let title = yard::title(title, StrokeColor::BodyOnBackground, Cling::LeftBottom).pack_top(1, yard::empty());
 	let submit = yard::button("Submit", submit_button_state);
 	let header = title.pad_cols(2).pack_left(LEFT_COLS, close);
-	let footer = submit.confine(14, 3, Cling::Top);
+	let footer = match delete_link {
+		None => submit.confine(14, 3, Cling::Top),
+		Some(link) => {
+			let delete = yard::button("Delete", ButtonState::enabled(link.map(|_| ())));
+			yard::empty().pack_left(14, submit).pack_right(14, delete)
+		}
+	};
 	let content = content.pad(1).pack_left(LEFT_COLS, yard::empty());
-	content.pack_top(3, header).pack_bottom(4, footer)
+	content.pack_top(3, header)
+		.pack_bottom(4, footer.confine_height(3, Cling::Top).pad_cols(2).pack_left(LEFT_COLS, yard::empty()))
 }

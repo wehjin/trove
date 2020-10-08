@@ -21,7 +21,13 @@ impl State {
 	}
 }
 
-pub enum Action { Close, Submit, EditAccount(StringEditAction), EditShares(StringEditAction) }
+pub enum Action {
+	Close,
+	Submit,
+	EditAccount(StringEditAction),
+	EditShares(StringEditAction),
+	Delete,
+}
 
 pub struct Spark {
 	pub chad: Chad,
@@ -33,7 +39,7 @@ pub struct Spark {
 impl yui::Spark for Spark {
 	type State = State;
 	type Action = Action;
-	type Report = (u64, String, u64);
+	type Report = (u64, String, Option<u64>);
 
 	fn create(&self, _ctx: &Create<Self::Action, Self::Report>) -> Self::State {
 		let (init_account, init_shares) = match self.lot_id {
@@ -61,14 +67,21 @@ impl yui::Spark for Spark {
 					let shares = ctx.state().shares_edit.chars.iter().cloned().collect::<String>().parse::<f64>().expect("Float in shares_edit");
 					let lot_id = self.lot_id.unwrap_or_else(rand::random);
 					self.chad.add_lot(self.squad_id, lot_id, &self.member_symbol, &account, shares);
-					let report = (self.squad_id, self.member_symbol.to_owned(), lot_id);
-					AfterFlow::Close(Some(report))
+					let lot_path = (self.squad_id, self.member_symbol.to_owned(), Some(lot_id));
+					AfterFlow::Close(Some(lot_path))
 				} else {
 					AfterFlow::Close(None)
 				}
 			}
 			Action::EditAccount(action) => AfterFlow::Revise(State { account_edit: ctx.state().account_edit.edit(action), ..ctx.state().clone() }),
 			Action::EditShares(action) => AfterFlow::Revise(State { shares_edit: ctx.state().shares_edit.edit(action), ..ctx.state().clone() }),
+			Action::Delete => match self.lot_id {
+				None => AfterFlow::Ignore,
+				Some(lot_id) => {
+					self.chad.del_lot(self.squad_id, lot_id);
+					AfterFlow::Close(Some((self.squad_id, self.member_symbol.to_owned(), None)))
+				}
+			},
 		}
 	}
 
@@ -85,7 +98,13 @@ impl yui::Spark for Spark {
 				ButtonState::disabled()
 			}
 		};
-		let yard = render::dialog(&title, link.map(|_| Action::Close), submit_state, content);
+		let yard = render::dialog(
+			&title,
+			link.map(|_| Action::Close),
+			submit_state,
+			if state.add_lot { None } else { Some(link.map(|_| Action::Delete)) },
+			content,
+		);
 		Some(yard)
 	}
 }

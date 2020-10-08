@@ -60,6 +60,7 @@ impl yui::Spark for Spark {
 			"Set Unspent",
 			link.map(|_| Action::Close),
 			if state.string_edit.is_valid() { ButtonState::enabled(link.map(|_| Action::Submit)) } else { ButtonState::disabled() },
+			None,
 			yard::textfield(UnspentEdit.as_i32(), "Unspent", state.string_edit.clone(), link.map(Action::Edit)).confine_height(3, Cling::Top),
 		);
 		Some(yard)

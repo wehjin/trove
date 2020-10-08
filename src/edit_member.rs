@@ -111,6 +111,7 @@ impl yui::Spark for Spark {
 			} else {
 				ButtonState::disabled()
 			},
+			None,
 			content,
 		);
 		Some(render)

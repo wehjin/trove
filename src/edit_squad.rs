@@ -56,6 +56,7 @@ impl Spark for EditSquadSpark {
 			} else {
 				ButtonState::disabled()
 			},
+			None,
 			trellis,
 		);
 		Some(render)
