@@ -1,7 +1,7 @@
 use chad_core::chad::Chad;
 use chad_core::core::Squad;
-use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Pack, Padding, SenderLink, yard};
-use yui::palette::StrokeColor;
+use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Pack, Padding, SenderLink, yard, Before};
+use yui::palette::{StrokeColor, FillGrade, FillColor};
 use yui::yard::{ButtonState, Pressable};
 
 use crate::{edit_lot, edit_member, edit_unspent, OWNER, render, YardId};
@@ -146,6 +146,7 @@ impl yui::Spark for Spark {
 				list.pack_bottom(3, button)
 			}
 		};
+		let side = side.before(yard::fill(FillColor::Side, FillGrade::Plain));
 		let yard = content.pack_left(SIDE_WIDTH, side);
 		Some(yard)
 	}

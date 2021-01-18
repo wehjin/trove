@@ -5,6 +5,7 @@ use yui::yard::{ButtonState, Pressable};
 
 use crate::{sprint, YardId};
 use crate::sprint::amount_prefix;
+use yui::palette::FillGrade::Plain;
 
 pub fn lot_summary(lot: &Lot, select_link: SenderLink<()>) -> (u8, ArcYard) {
 	let text = format!("{} shares in {} account", amount_prefix(lot.shares, ""), &lot.account);
@@ -25,7 +26,7 @@ pub fn member_view(member: &SquadMember, squad: &Squad, lot_link: SenderLink<(u6
 			.pack_bottom(2, shares_label)
 			.pack_bottom(1, market_label)
 			.pad(1);
-		front.before(yard::fill(FillColor::Primary))
+		front.before(yard::fill(FillColor::Primary, Plain))
 	};
 	let content = {
 		let lots_label = yard::label(format!("Lots ({})", lots.len()), StrokeColor::BodyOnBackground, Cling::Left);
@@ -119,7 +120,7 @@ pub fn drift_summary(report: &DriftReport, select_link: SenderLink<(u64, String)
 
 pub fn squad(squad: &Squad, add_member_link: SenderLink<()>, view_member_link: SenderLink<(u64, String)>, set_unspent_link: SenderLink<(u64, Option<f64>)>) -> ArcYard {
 	let title = yard::title(&squad.name, StrokeColor::BodyOnPrimary, Cling::LeftBottom);
-	let header = title.pad(1).before(yard::fill(FillColor::Primary));
+	let header = title.pad(1).before(yard::fill(FillColor::Primary, Plain));
 	let content = {
 		let unspent = {
 			let label_text = "Unspent: ";
