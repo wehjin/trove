@@ -1,7 +1,7 @@
 use chad_core::chad::Chad;
 use chad_core::core::Squad;
-use yui::{AfterFlow, ArcYard, Cling, Confine, Create, Flow, Pack, Padding, SenderLink, yard, Before};
-use yui::palette::{StrokeColor, FillGrade, FillColor};
+use yui::{AfterFlow, ArcYard, Before, Cling, Confine, Create, Flow, Pack, Padding, SenderLink, yard};
+use yui::palette::{FillColor, FillGrade, StrokeColor};
 use yui::yard::{ButtonState, Pressable};
 
 use crate::{edit_lot, edit_member, edit_unspent, OWNER, render, YardId};
@@ -101,7 +101,6 @@ impl yui::Spark for Spark {
 	}
 
 	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
-		const SIDE_WIDTH: i32 = 21;
 		let mut squads = state.squads.clone();
 		squads.sort_by_key(|it| it.name.to_owned());
 		let (selected, member) = match &state.pick {
@@ -109,7 +108,7 @@ impl yui::Spark for Spark {
 			None => (0, &None),
 		};
 		let squad = if selected < squads.len() { Some(&squads[selected]) } else { None };
-		let content = match squad {
+		let center = match squad {
 			None => yard::label("Add a squad", StrokeColor::CommentOnBackground, Cling::Center),
 			Some(squad) => match member {
 				None => render::squad(
@@ -128,26 +127,46 @@ impl yui::Spark for Spark {
 				}
 			},
 		};
-		let side = {
-			let button = yard::button("Add Squad", ButtonState::enabled(link.map(|_| Action::AddSquad)));
-			if state.squads.is_empty() {
-				button.confine_height(3, Cling::Center)
-			} else {
-				let items: Vec<(u8, ArcYard)> = squads.iter()
-					.map(|it| {
-						let squad_id = it.id;
-						let squad_name = format!("{}", it.name);
-						let yard = yard::label(squad_name, StrokeColor::BodyOnBackground, Cling::Center)
-							.pad_cols(1)
-							.pressable(link.map(move |_| Action::PickSquad(squad_id)));
-						(3, yard)
-					}).collect();
-				let list = yard::list(YardId::PickSquadList.as_i32(), selected, items);
-				list.pack_bottom(3, button)
-			}
-		};
-		let side = side.before(yard::fill(FillColor::Side, FillGrade::Plain));
-		let yard = content.pack_left(SIDE_WIDTH, side);
+		let sources = squads.iter().map(|it| {
+			let squad_id = it.id;
+			let squad_name = format!("{}", it.name);
+			let yard =
+				yard::label(squad_name, StrokeColor::BodyOnBackground, Cling::Center)
+					.pad_cols(1)
+					.pressable(link.map(move |_| Action::PickSquad(squad_id)))
+				;
+			(3, yard)
+		}).collect();
+		let yard = mux(
+			YardId::PickSquadList.as_i32(),
+			center,
+			sources,
+			selected,
+			Button("Add Squad".into(), link.map(|_| Action::AddSquad)),
+		);
 		Some(yard)
 	}
+}
+
+pub struct Button(String, SenderLink<i32>);
+
+fn mux(id: i32, center: ArcYard, sources: Vec<(u8, ArcYard)>, selected_index: usize, button: Button) -> ArcYard {
+	const SIDE_WIDTH: i32 = 21;
+	let Button(title, link) = button;
+	let action_button = yard::button(title, ButtonState::enabled(link));
+	let sidebar_fore = if sources.is_empty() {
+		action_button.confine_height(3, Cling::Top)
+	} else {
+		let sources = sources.into_iter().enumerate().map(|(i, (size, yard))| {
+			let adjusted_yard = if i == selected_index {
+				yard.before(yard::fill(FillColor::Side, FillGrade::Press))
+			} else { yard };
+			(size, adjusted_yard)
+		}).collect();
+		yard::list(id, selected_index, sources).pack_bottom(3, action_button)
+	};
+	let sidebar_back = yard::fill(FillColor::Side, FillGrade::Plain);
+	let sidebar = sidebar_fore.before(sidebar_back);
+	let yard = center.pack_left(SIDE_WIDTH, sidebar);
+	yard
 }
