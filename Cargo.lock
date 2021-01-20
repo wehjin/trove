@@ -357,7 +357,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "yui"
 version = "0.1.0"
-source = "git+https://github.com/wehjin/yui.git#9946032fc0122d1e5e7276525cdc18cf837cabfd"
+source = "git+https://github.com/wehjin/yui.git#0adef6402ddb4d683294266161c2a10d2879566e"
 dependencies = [
  "log",
  "ncurses",
