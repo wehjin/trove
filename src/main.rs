@@ -8,7 +8,7 @@ extern crate yui;
 use std::error::Error;
 
 use chad_core::chad::Chad;
-use yui::app;
+use yui::console;
 
 mod edit_squad;
 mod edit_member;
@@ -18,6 +18,7 @@ mod edit_lot;
 pub(crate) mod sprint;
 pub(crate) mod render;
 pub(crate) mod compute;
+pub mod models;
 
 const OWNER: u64 = 5000;
 
@@ -29,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	};
 	let chad = Chad::connect(&data_dir);
 	let spark = pick_squad::Spark { chad };
-	app::run(spark, None)?;
+	console::run_spark(spark);
 	Ok(())
 }
 

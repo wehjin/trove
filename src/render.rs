@@ -1,27 +1,104 @@
+
+
 use chad_core::core::{DriftReport, Lot, Squad, SquadMember};
-use yui::{ArcYard, Before, Cling, Confine, Pack, Padding, SenderLink, yard};
+use rand::random;
+use yui::{ArcYard, Before, Cling, Confine, Pack, Padding, SenderLink, SyncLink, Trigger,  yard};
 use yui::palette::{FillColor, StrokeColor};
-use yui::yard::{ButtonState, Pressable};
+use yui::palette::FillGrade::Plain;
+use yui::yard::{ ButtonModel, PressModel, Priority};
+use yui::yard::model::{ScrollAction, ScrollModel};
 
 use crate::{sprint, YardId};
+use crate::edit_squad::DialogModel;
+use crate::models::squad_view::SquadViewModel;
 use crate::sprint::amount_prefix;
-use yui::palette::FillGrade::Plain;
 
-pub fn lot_summary(lot: &Lot, select_link: SenderLink<()>) -> (u8, ArcYard) {
-	let text = format!("{} shares in {} account", amount_prefix(lot.shares, ""), &lot.account);
-	let yard = yard::label(&text, StrokeColor::BodyOnBackground, Cling::Left)
-		.pressable(select_link.map(|_| ()));
-	(1, yard)
+#[derive(Debug, Clone)]
+pub struct SquadMemberViewModel {
+	member: SquadMember,
+	lots: Vec<Lot>,
+	lots_scroll: ScrollModel,
+	lot_presses: Vec<PressModel>,
+	add_lot_press: ButtonModel,
+	action_link: SenderLink<SquadMemberViewAction>,
 }
 
-pub fn member_view(member: &SquadMember, squad: &Squad, lot_link: SenderLink<(u64, String, Option<u64>)>) -> ArcYard {
-	let lots = squad.lots.iter().filter(|it| it.symbol == member.symbol).collect::<Vec<_>>();
+#[derive(Debug, Clone)]
+pub enum SquadMemberViewAction {
+	PressAddLot,
+	ReportLotPress { squad_id: u64, symbol: String, lot_id: Option<u64> },
+	PressLot(usize),
+	ScrollLots(ScrollAction),
+}
+
+
+impl SquadMemberViewModel {
+
+	// fn reset_member_lots_scroll_model(&self) -> ScrollModel {
+	// 	ScrollModel::new_count_height(self.member_lots_scroll.id, 0, 1, 0)
+	// }
+	// pub fn member_lots_scroll_for_pick(&self, pick: &Option<(u64, Option<String>)>, squads: &Vec<Squad>) -> ScrollModel {
+	// 	if let Some((squad_id, member_sym)) = pick {
+	// 		if let Some(member_sym) = member_sym {
+	// 			if let Some(index) = squads.iter().position(|squad| squad.id == *squad_id) {
+	// 				let squad = &squads[index];
+	// 				let lots = squad.lots.iter().filter(|lot| lot.symbol == *member_sym).collect::<Vec<_>>();
+	// 				ScrollModel::new_count_height(self.member_lots_scroll.id, lots.len(), 1, 0)
+	// 			} else {
+	// 				self.reset_member_lots_scroll_model()
+	// 			}
+	// 		} else {
+	// 			self.reset_member_lots_scroll_model()
+	// 		}
+	// 	} else {
+	// 		self.reset_member_lots_scroll_model()
+	// 	}
+	// }
+
+	pub fn new(squad: &Squad, member: &SquadMember, add_lot_trigger: Trigger, action_link: SenderLink<SquadMemberViewAction>) -> Self {
+		let member = member.clone();
+		let lots = squad.lots.iter().filter(|it| it.symbol == member.symbol).cloned().collect::<Vec<_>>();
+		let lots_scroll = ScrollModel::new_count_height(YardId::MemberLotList.as_i32(), lots.len(), 1, 0);
+
+		let mut lot_presses = Vec::new();
+		for index in 0..lots.len() {
+			let lot = &lots[index];
+			let release_action = SquadMemberViewAction::ReportLotPress { squad_id: lot.squad_id, symbol: lot.symbol.to_owned(), lot_id: Some(lot.id) };
+			let press = PressModel::new(random(), action_link.map(move |_| release_action.clone()));
+			lot_presses.push(press);
+		}
+		let add_lot_press = ButtonModel::enabled(
+			"Add Lot",
+			add_lot_trigger,
+			action_link.to_sync().map(|_| SquadMemberViewAction::PressAddLot),
+			Priority::Default,
+		);
+		SquadMemberViewModel { member, lots, lots_scroll, lot_presses, add_lot_press, action_link }
+	}
+	pub fn symbol(&self) -> &String { &self.member.symbol }
+	pub fn shares(&self) -> f64 { self.lots.iter().map(|it| it.shares).sum::<f64>() }
+	pub fn market_value(&self) -> f64 { self.shares() * self.member.price }
+	pub fn lots(&self) -> &Vec<Lot> { &self.lots }
+	pub fn lot_press_model_and_link(&self, index: usize) -> (&PressModel, SyncLink<i32>) {
+		(
+			&self.lot_presses[index],
+			self.action_link.to_sync().map(move |_| SquadMemberViewAction::PressLot(index))
+		)
+	}
+	pub fn lots_scroll_model_and_link(&self) -> (ScrollModel, SyncLink<ScrollAction>) { (self.lots_scroll.clone(), self.action_link.to_sync().map(|action| SquadMemberViewAction::ScrollLots(action))) }
+	pub fn add_lot_button(&self) -> &ButtonModel { &self.add_lot_press }
+
+	pub fn to_lots_scroll_link(&self) -> SyncLink<ScrollAction> {
+		unimplemented!()
+	}
+}
+
+pub fn member_view(member_view: &SquadMemberViewModel) -> ArcYard {
 	let header = {
-		let title = yard::title(&member.symbol, StrokeColor::BodyOnPrimary, Cling::Left);
-		let shares = lots.iter().map(|it| it.shares).sum::<f64>();
+		let title = yard::title(member_view.symbol(), StrokeColor::BodyOnPrimary, Cling::Left);
+		let shares = member_view.shares();
 		let shares_label = yard::label(format!("Shares: {}", sprint::amount_prefix(shares, "")), StrokeColor::BodyOnPrimary, Cling::LeftBottom);
-		let market_value = shares * squad.prices[&member.symbol];
-		let market_label = yard::label(format!("Market value: {}", sprint::amount(market_value)), StrokeColor::BodyOnPrimary, Cling::Left);
+		let market_label = yard::label(format!("Market value: {}", sprint::amount(member_view.market_value())), StrokeColor::BodyOnPrimary, Cling::Left);
 		let front = title
 			.pack_bottom(2, shares_label)
 			.pack_bottom(1, market_label)
@@ -29,29 +106,30 @@ pub fn member_view(member: &SquadMember, squad: &Squad, lot_link: SenderLink<(u6
 		front.before(yard::fill(FillColor::Primary, Plain))
 	};
 	let content = {
+		let lots = member_view.lots();
 		let lots_label = yard::label(format!("Lots ({})", lots.len()), StrokeColor::BodyOnBackground, Cling::Left);
-		let lot_list = if lots.is_empty() {
-			yard::label("No Lots", StrokeColor::CommentOnBackground, Cling::Center)
-		} else {
-			let lot_items = lots.into_iter()
-				.map(|it| lot_summary(it, lot_link.map({
-					let path = (it.squad_id, it.symbol.to_string(), Some(it.id));
-					move |_| path.clone()
-				})))
-				.collect();
-			yard::list(YardId::MemberLotList.as_i32(), 0, lot_items)
-		}.pack_top(2, lots_label.confine_height(1, Cling::Top));
+		let lot_list =
+			if lots.is_empty() {
+				yard::label("No Lots", StrokeColor::CommentOnBackground, Cling::Center)
+			} else {
+				let yards = lots.iter().enumerate().map(|(index, lot)| {
+					let shares_in_account = format!("{} shares in {} account", amount_prefix(lot.shares, ""), &lot.account);
+					let label = yard::label(&shares_in_account, StrokeColor::BodyOnBackground, Cling::Left);
+					let (press_model, press_link) = member_view.lot_press_model_and_link(index);
+					yard::pressable(label, press_model, press_link)
+				}).collect::<Vec<_>>();
 
-		let add_button = yard::button("Add Lot", ButtonState::default(lot_link.map({
-			let path = (member.squad_id, member.symbol.clone(), None);
-			move |_| path.clone()
-		})));
+				let (lots_scroll_model, lots_scroll_link) = member_view.lots_scroll_model_and_link();
+				yard::list(yards, lots_scroll_model, lots_scroll_link)
+			}.pack_top(2, lots_label.confine_height(1, Cling::Top));
+
+		let add_button = yard::button(member_view.add_lot_button());
 		lot_list.pack_bottom(3, add_button.confine(13, 3, Cling::Top))
 	};
 	content.pad(1).pack_top(7, header)
 }
 
-pub fn drift_summary(report: &DriftReport, select_link: SenderLink<(u64, String)>) -> (u8, ArcYard) {
+pub fn drift_summary(report: &DriftReport, press_model: &PressModel, press_link: SyncLink<i32>) -> ArcYard {
 	let drift_amount = report.drift_amount();
 	let left = {
 		let symbol = format!("{}", report.symbol());
@@ -107,70 +185,67 @@ pub fn drift_summary(report: &DriftReport, select_link: SenderLink<(u64, String)
 		};
 		top.pack_bottom(1, bottom).confine_width(10, Cling::Center)
 	};
-	let content = center
-		.pack_left(12, left)
-		.pack_right(12, right);
-	let cell = content.pad(1).pressable(select_link.map({
-		let squad_id = report.member.squad_id;
-		let symbol = report.symbol().to_string();
-		move |_| (squad_id, symbol.clone())
-	})).confine_width(50, Cling::Custom { x: 0.1, y: 0.5 });
-	(4, cell)
+	let content = center.pack_left(12, left).pack_right(12, right);
+	yard::pressable(content.pad(1), press_model, press_link).confine_width(50, Cling::Custom { x: 0.1, y: 0.5 })
 }
 
-pub fn squad(squad: &Squad, add_member_link: SenderLink<()>, view_member_link: SenderLink<(u64, String)>, set_unspent_link: SenderLink<(u64, Option<f64>)>) -> ArcYard {
-	let title = yard::title(&squad.name, StrokeColor::BodyOnPrimary, Cling::LeftBottom);
+pub fn squad(squad_view: &SquadViewModel) -> ArcYard {
+	let title = yard::title(&squad_view.squad_name(), StrokeColor::BodyOnPrimary, Cling::LeftBottom);
 	let header = title.pad(1).before(yard::fill(FillColor::Primary, Plain));
 	let content = {
 		let unspent = {
-			let label_text = "Unspent: ";
-			let label = yard::label(label_text, StrokeColor::BodyOnBackground, Cling::Left);
-			let button_text = sprint::amount(squad.unspent);
-			let button = yard::button(&button_text, ButtonState::default(set_unspent_link.map({
-				let squad_id = squad.id;
-				let unspent = if squad.unspent == 0.0 { None } else { Some(squad.unspent) };
-				move |_| (squad_id, unspent)
-			})));
+			let label = yard::label("Unspent: ", StrokeColor::BodyOnBackground, Cling::Left);
+			let (unspent_press_model, unspent_press_text_len) = squad_view.unspent_press_model_and_text_len();
+			let button = yard::button(unspent_press_model);
 			yard::empty()
-				.pack_left(button_text.len() as i32 + 6, button)
-				.pack_left(label_text.len() as i32, label)
+				.pack_left(unspent_press_text_len as i32 + 6, button)
+				.pack_left("Unspent: ".len() as i32, label)
 		};
 		let members = {
-			let member_count = squad.members.len();
+			let member_count = squad_view.squad_members_count();
 			let label_text = format!("Members ({})", member_count);
 			let label = yard::label(label_text, StrokeColor::BodyOnBackground, Cling::LeftBottom);
 			let list = if member_count == 0 {
 				yard::label("No members", StrokeColor::CommentOnBackground, Cling::Center)
 			} else {
-				let items = squad.drift_reports().iter().rev().map(|report| {
-					drift_summary(report, view_member_link.clone())
-				}).collect();
-				yard::list(YardId::SquadMembersList.as_i32(), 0, items)
+				let summary_yards = squad_view.drift_reports()
+					.iter()
+					.enumerate()
+					.map(|(index, report)| {
+						let (press_model, press_link) = squad_view.squad_member_press_model_and_link(index);
+						drift_summary(report, press_model, press_link)
+					})
+					.collect();
+
+				let (scroll_model, scroll_link) = squad_view.squad_members_scroll_model_and_link();
+				yard::list(summary_yards, scroll_model.clone(), scroll_link)
 			};
-			let button = yard::button("Add Member", ButtonState::enabled(add_member_link.map(|_| ())));
-			list
-				.pack_top(1, label)
-				.pack_bottom(3, button)
+			let button = yard::button(squad_view.add_member_press_model());
+			list.pack_top(1, label).pack_bottom(3, button)
 		};
 		members.pack_top(3, unspent)
 	}.pad(1);
 	content.pack_top(4, header)
 }
 
-pub fn dialog(title: &str, close_link: SenderLink<()>, submit_button_state: ButtonState, delete_link: Option<SenderLink<()>>, content: ArcYard) -> ArcYard {
+pub fn dialog(title: &str, dialog_model: &DialogModel, content: ArcYard) -> ArcYard {
 	const LEFT_COLS: i32 = 7;
-	let close = yard::button("x", ButtonState::default(close_link.map(|_| ())));
-	let title = yard::title(title, StrokeColor::BodyOnBackground, Cling::LeftBottom).pack_top(1, yard::empty());
-	let submit = yard::button("Submit", submit_button_state);
-	let header = title.pad_cols(2).pack_left(LEFT_COLS, close);
-	let footer = match delete_link {
-		None => submit.confine(14, 3, Cling::Top),
-		Some(link) => {
-			let delete = yard::button("Delete", ButtonState::enabled(link.map(|_| ())));
-			yard::empty().pack_left(14, submit).pack_right(14, delete)
+	let header
+		= yard::title(title, StrokeColor::BodyOnBackground, Cling::LeftBottom)
+		.pack_top(1, yard::empty())
+		.pad_cols(2)
+		.pack_left(LEFT_COLS, yard::button(&dialog_model.close));
+	let footer = {
+		let submit_button = yard::button(&dialog_model.submit);
+		match &dialog_model.delete {
+			None => submit_button.confine(14, 3, Cling::Top),
+			Some(delete_model) => {
+				yard::empty().pack_left(14, submit_button).pack_right(14, yard::button(delete_model))
+			}
 		}
 	};
 	let content = content.pad(1).pack_left(LEFT_COLS, yard::empty());
-	content.pack_top(3, header)
+	content
+		.pack_top(3, header)
 		.pack_bottom(4, footer.confine_height(3, Cling::Top).pad_cols(2).pack_left(LEFT_COLS, yard::empty()))
 }

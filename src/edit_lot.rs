@@ -2,9 +2,9 @@ use chad_core::chad::Chad;
 use stringedit::Validity;
 use yui::{AfterFlow, ArcYard, Cling, Create, Flow, Pack, SenderLink, StringEdit, StringEditAction, yard};
 use yui::palette::StrokeColor;
-use yui::yard::ButtonState;
 
 use crate::{OWNER, render};
+use crate::edit_squad::{DialogAction, DialogModel};
 use crate::YardId::{LotAccountEdit, LotSharesEdit};
 
 #[derive(Clone, Debug)]
@@ -13,6 +13,7 @@ pub struct State {
 	add_lot: bool,
 	account_edit: StringEdit,
 	shares_edit: StringEdit,
+	dialog_model: DialogModel,
 }
 
 impl State {
@@ -21,12 +22,14 @@ impl State {
 	}
 }
 
-pub enum Action {
+#[derive(Clone)]
+pub enum EditLotAction {
 	Close,
 	Submit,
 	EditAccount(StringEditAction),
 	EditShares(StringEditAction),
 	Delete,
+	UpdateDialog(DialogAction),
 }
 
 pub struct Spark {
@@ -38,10 +41,10 @@ pub struct Spark {
 
 impl yui::Spark for Spark {
 	type State = State;
-	type Action = Action;
+	type Action = EditLotAction;
 	type Report = (u64, String, Option<u64>);
 
-	fn create(&self, _ctx: &Create<Self::Action, Self::Report>) -> Self::State {
+	fn create(&self, ctx: &Create<Self::Action, Self::Report>) -> Self::State {
 		let (init_account, init_shares) = match self.lot_id {
 			None => ("".to_string(), "".to_string()),
 			Some(lot_id) => {
@@ -50,21 +53,34 @@ impl yui::Spark for Spark {
 				(lot.account.clone(), format!("{}", lot.shares))
 			}
 		};
+		let add_lot = self.lot_id.is_none();
+		let dialog_model = {
+			let model = DialogModel::new(
+				ctx.link().to_trigger(EditLotAction::Close),
+				ctx.link().to_trigger(EditLotAction::Submit),
+				ctx.link().map(|action| EditLotAction::UpdateDialog(action)),
+			);
+			if add_lot { model } else {
+				model.enable_delete("Delete", ctx.link().to_trigger(EditLotAction::Delete))
+			}
+		};
 		State {
 			symbol: self.member_symbol.to_owned(),
-			add_lot: self.lot_id.is_none(),
+			add_lot,
 			account_edit: StringEdit::new(init_account.clone(), init_account.len(), Validity::NotEmpty),
 			shares_edit: StringEdit::new(init_shares.clone(), init_shares.len(), Validity::Double),
+			dialog_model,
 		}
 	}
 
 	fn flow(&self, action: Self::Action, ctx: &impl Flow<Self::State, Self::Action, Self::Report>) -> AfterFlow<Self::State, Self::Report> {
+		let mut state = ctx.state().clone();
 		match action {
-			Action::Close => AfterFlow::Close(None),
-			Action::Submit => {
-				if ctx.state().is_valid() {
-					let account = ctx.state().account_edit.chars.iter().cloned().collect::<String>().trim().to_owned();
-					let shares = ctx.state().shares_edit.chars.iter().cloned().collect::<String>().parse::<f64>().expect("Float in shares_edit");
+			EditLotAction::Close => AfterFlow::Close(None),
+			EditLotAction::Submit => {
+				if state.is_valid() {
+					let account = state.account_edit.chars.iter().cloned().collect::<String>().trim().to_owned();
+					let shares = state.shares_edit.chars.iter().cloned().collect::<String>().parse::<f64>().expect("Float in shares_edit");
 					let lot_id = self.lot_id.unwrap_or_else(rand::random);
 					self.chad.add_lot(self.squad_id, lot_id, &self.member_symbol, &account, shares);
 					let lot_path = (self.squad_id, self.member_symbol.to_owned(), Some(lot_id));
@@ -73,38 +89,39 @@ impl yui::Spark for Spark {
 					AfterFlow::Close(None)
 				}
 			}
-			Action::EditAccount(action) => AfterFlow::Revise(State { account_edit: ctx.state().account_edit.edit(action), ..ctx.state().clone() }),
-			Action::EditShares(action) => AfterFlow::Revise(State { shares_edit: ctx.state().shares_edit.edit(action), ..ctx.state().clone() }),
-			Action::Delete => match self.lot_id {
+			EditLotAction::EditAccount(action) => {
+				state.account_edit = state.account_edit.edit(action);
+				let is_valid = state.is_valid();
+				state.dialog_model = state.dialog_model.enable_submit(is_valid);
+				AfterFlow::Revise(state)
+			}
+			EditLotAction::EditShares(action) => {
+				state.shares_edit = state.shares_edit.edit(action);
+				let is_valid = state.is_valid();
+				state.dialog_model = state.dialog_model.enable_submit(is_valid);
+				AfterFlow::Revise(state)
+			}
+			EditLotAction::Delete => match self.lot_id {
 				None => AfterFlow::Ignore,
 				Some(lot_id) => {
 					self.chad.del_lot(self.squad_id, lot_id);
 					AfterFlow::Close(Some((self.squad_id, self.member_symbol.to_owned(), None)))
 				}
 			},
+			EditLotAction::UpdateDialog(action) => {
+				let dialog_model = state.dialog_model.update(action);
+				AfterFlow::Revise(State { dialog_model, ..state })
+			}
 		}
 	}
 
 	fn render(state: &Self::State, link: &SenderLink<Self::Action>) -> Option<ArcYard> {
 		let title = if state.add_lot { format!("Add Lot") } else { format!("Edit Lot") };
 		let content = yard::trellis(3, 1, Cling::Top, vec![
-			yard::textfield(LotAccountEdit.as_i32(), "Account", state.account_edit.clone(), link.map(Action::EditAccount)),
-			yard::textfield(LotSharesEdit.as_i32(), "Shares", state.shares_edit.clone(), link.map(Action::EditShares)),
+			yard::textfield(LotAccountEdit.as_i32(), "Account", state.account_edit.clone(), link.map(EditLotAction::EditAccount)),
+			yard::textfield(LotSharesEdit.as_i32(), "Shares", state.shares_edit.clone(), link.map(EditLotAction::EditShares)),
 		]).pack_top(2, yard::label(&state.symbol, StrokeColor::BodyOnBackground, Cling::LeftTop));
-		let submit_state = {
-			if state.is_valid() {
-				ButtonState::enabled(link.map(|_| Action::Submit))
-			} else {
-				ButtonState::disabled()
-			}
-		};
-		let yard = render::dialog(
-			&title,
-			link.map(|_| Action::Close),
-			submit_state,
-			if state.add_lot { None } else { Some(link.map(|_| Action::Delete)) },
-			content,
-		);
+		let yard = render::dialog(&title, &state.dialog_model, content);
 		Some(yard)
 	}
 }
