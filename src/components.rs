@@ -17,9 +17,9 @@ pub struct Position {
 }
 
 #[derive(Resource)]
-pub struct PaletteMesh {
+pub struct AppAssets {
 	pub color_materials: Vec<Handle<ColorMaterial>>,
-	pub mesh_handles: Vec<Handle<Mesh>>,
+	pub meshes: Vec<Handle<Mesh>>,
 }
 
 #[derive(Component)]

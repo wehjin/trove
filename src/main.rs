@@ -4,7 +4,7 @@ use bevy::DefaultPlugins;
 use bevy::prelude::{App, IntoSystemConfigs, Startup, Update};
 
 use console::Console;
-use systems::{add_circles, add_console, add_palette, add_panels, flush_console, greet_panels, hello_world, setup_camera};
+use systems::{add_circles, add_console, add_app_assets, add_panels, flush_console, greet_panels, hello_world, setup_camera};
 
 use crate::systems::{add_fills, despawn_fill_meshes, spawn_fill_meshes};
 
@@ -13,10 +13,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 	App::new()
 		.add_plugins(DefaultPlugins)
 		.add_systems(Startup, add_console)
-		.add_systems(Startup, add_palette)
+		.add_systems(Startup, add_app_assets)
 		.add_systems(Startup, setup_camera.after(add_console))
 		.add_systems(Startup, add_panels.after(add_console))
-		.add_systems(Startup, add_circles.after(add_console).after(add_palette))
+		.add_systems(Startup, add_circles.after(add_console).after(add_app_assets))
 		.add_systems(Startup, add_fills)
 		.add_systems(Update, flush_console)
 		.add_systems(Update, hello_world.before(flush_console))
