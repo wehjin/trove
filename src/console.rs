@@ -1,8 +1,8 @@
 use std::error::Error;
-use std::io::stdout;
+use std::io::{stdout, Write};
 
 use bevy::prelude::Resource;
-use crossterm::{execute, terminal};
+use crossterm::{execute, queue, terminal};
 use crossterm::cursor::MoveTo;
 use crossterm::style::{Color, Print, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::Clear;
@@ -20,8 +20,11 @@ use crate::Position;
 pub struct Console;
 
 impl Console {
+	pub fn width_height(&self) -> (u16, u16) {
+		terminal::size().expect("size")
+	}
 	pub fn move_print(&self, col: u16, row: u16, msg: &str) {
-		execute!(
+		queue!(
 			stdout(),
 			MoveTo(col, row),
 			SetForegroundColor(Color::Yellow),
@@ -34,7 +37,7 @@ impl Console {
 		let spaces = (0..width).map(|_| ' ').collect::<String>();
 		let col = pos.left;
 		for row in pos.top..pos.bottom {
-			execute!(
+			queue!(
 				stdout(),
 				MoveTo(col, row),
 				SetBackgroundColor(color),
@@ -42,12 +45,15 @@ impl Console {
 			).expect("moveto, print");
 		}
 	}
+	pub fn flush(&mut self) {
+		stdout().flush().expect("flush");
+	}
 
 	pub fn print(&self, msg: &str) {
 		let (cols, rows) = terminal::size().expect("size");
 		let title = format!(" {rows} x {cols} {msg} ");
 		let underline = (0..title.len()).map(|_| '▀').collect::<String>();
-		execute!(
+		queue!(
 			stdout(),
 			SetForegroundColor(Color::Blue),
 			SetBackgroundColor(Color::Black),
