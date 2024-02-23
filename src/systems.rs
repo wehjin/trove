@@ -1,28 +1,12 @@
 use bevy::asset::Assets;
-use bevy::prelude::{Camera2dBundle, Circle, ColorMaterial, Commands, default, Mesh, Query, Res, ResMut, Transform, With};
+use bevy::prelude::{Camera2dBundle, Circle, ColorMaterial, Commands, default, Entity, Mesh, Query, Rectangle, Res, ResMut, Transform, With};
 use bevy::render::camera::ScalingMode;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use crossterm::event::read;
 use crossterm::style::Color;
 
-use crate::components::{AppCamera, Palette, Panel, Position};
+use crate::components::{AppCamera, Fill, FillMesh, Glyph, PaletteMesh, Panel, Position, Volume};
 use crate::console::Console;
-
-pub fn add_palette(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
-	let colors = {
-		use bevy::prelude::*;
-		[Color::SEA_GREEN, Color::ALICE_BLUE]
-	};
-	let mut handles = Vec::new();
-	for color in colors {
-		let material = materials.add(color);
-		handles.push(material);
-	}
-	let palette = Palette {
-		color_materials: handles,
-	};
-	commands.insert_resource(palette);
-}
 
 pub fn setup_camera(mut commands: Commands, console: Res<Console>) {
 	let (width, height) = console.width_height();
@@ -32,13 +16,73 @@ pub fn setup_camera(mut commands: Commands, console: Res<Console>) {
 	commands.spawn((AppCamera, camera));
 }
 
-pub fn add_circles(
+pub fn add_palette(
 	mut commands: Commands,
+	mut materials: ResMut<Assets<ColorMaterial>>,
 	mut meshes: ResMut<Assets<Mesh>>,
-	palette: Res<Palette>,
-	console: Res<Console>,
 ) {
-	let shape = Mesh2dHandle(meshes.add(Circle { radius: 0.45 }));
+	let color_materials = {
+		use bevy::prelude::*;
+		vec![
+			materials.add(Color::SEA_GREEN),
+			materials.add(Color::ALICE_BLUE),
+			materials.add(Color::BISQUE),
+		]
+	};
+	let palette = PaletteMesh {
+		color_materials,
+		mesh_handles: vec![
+			meshes.add(Circle { radius: 0.45 }),
+			meshes.add(Rectangle::new(1.0, 1.0)),
+		],
+	};
+	commands.insert_resource(palette);
+}
+
+pub fn add_fills(mut commands: Commands) {
+	let fill = Fill {
+		glyph: Glyph::SolidRed,
+		volume: Volume {
+			left: 1,
+			top: 1,
+			far: 0,
+			right: 21,
+			bottom: 11,
+			near: 1,
+		},
+	};
+	commands.spawn(fill);
+}
+
+pub fn despawn_fill_meshes(query: Query<Entity, With<FillMesh>>, mut commands: Commands) {
+	for entity in query.iter() {
+		commands.entity(entity).despawn();
+	}
+}
+
+pub fn spawn_fill_meshes(
+	query: Query<&Fill>,
+	palette_mesh: Res<PaletteMesh>,
+	console: Res<Console>,
+	mut commands: Commands,
+) {
+	let (_cols, rows) = console.width_height();
+	for fill in query.iter() {
+		let center = Transform::from_xyz(0.5, -0.5, 0.);
+		let scale = Transform::from_scale((fill.width(), fill.height(), 1.).into());
+		let shift = Transform::from_xyz(fill.left(), rows as f32 - fill.top(), fill.near());
+		let together = shift.compute_matrix().mul_mat4(&scale.compute_matrix()).mul_mat4(&center.compute_matrix());
+		let transform = Transform::from_matrix(together);
+		commands.spawn((FillMesh, MaterialMesh2dBundle {
+			mesh: Mesh2dHandle(palette_mesh.mesh_handles[1].clone()),
+			material: palette_mesh.color_materials[2].clone(),
+			transform,
+			..default()
+		}));
+	}
+}
+
+pub fn add_circles(mut commands: Commands, palette_mesh: Res<PaletteMesh>, console: Res<Console>) {
 	let (width, height) = console.width_height();
 	for row in 0..height {
 		let y = row as f32 + 0.5;
@@ -46,8 +90,8 @@ pub fn add_circles(
 			let x = col as f32 + 0.5;
 			if (col % 10) != 0 {
 				commands.spawn(MaterialMesh2dBundle {
-					mesh: shape.clone(),
-					material: palette.color_materials[row as usize % 2].clone(),
+					mesh: Mesh2dHandle(palette_mesh.mesh_handles[0].clone()),
+					material: palette_mesh.color_materials[row as usize % 2].clone(),
 					transform: Transform::from_xyz(x, y, 0.0),
 					..default()
 				});
@@ -61,7 +105,7 @@ pub fn add_console(mut commands: Commands) {
 	commands.insert_resource(console);
 }
 
-pub fn await_human() {
+pub fn _await_human() {
 	read().expect("read");
 }
 

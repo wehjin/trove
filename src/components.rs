@@ -1,4 +1,4 @@
-use bevy::prelude::{ColorMaterial, Component, Handle, Resource};
+use bevy::prelude::{ColorMaterial, Component, Handle, Mesh, Resource};
 
 #[derive(Component)]
 pub struct AppCamera;
@@ -17,14 +17,36 @@ pub struct Position {
 }
 
 #[derive(Resource)]
-pub struct Palette {
+pub struct PaletteMesh {
 	pub color_materials: Vec<Handle<ColorMaterial>>,
+	pub mesh_handles: Vec<Handle<Mesh>>,
 }
+
+#[derive(Component)]
+pub struct FillMesh;
 
 #[derive(Component, Copy, Clone)]
 pub struct Fill {
 	pub glyph: Glyph,
 	pub volume: Volume,
+}
+
+impl Fill {
+	pub fn left(&self) -> f32 {
+		self.volume.left as f32
+	}
+	pub fn top(&self) -> f32 {
+		self.volume.top as f32
+	}
+	pub fn width(&self) -> f32 {
+		self.volume.width() as f32
+	}
+	pub fn height(&self) -> f32 {
+		self.volume.height() as f32
+	}
+	pub fn near(&self) -> f32 {
+		self.volume.near as f32
+	}
 }
 
 #[derive(Copy, Clone)]
@@ -37,7 +59,16 @@ pub struct Volume {
 	pub near: i16,
 }
 
+impl Volume {
+	pub fn width(&self) -> i16 {
+		self.right - self.left
+	}
+	pub fn height(&self) -> i16 {
+		self.bottom - self.top
+	}
+}
+
 #[derive(Copy, Clone)]
 pub enum Glyph {
-	Solid
+	SolidRed
 }
