@@ -1,7 +1,6 @@
 use std::error::Error;
 
 use crossterm::event::read;
-use crossterm::ExecutableCommand;
 
 use console::Console;
 

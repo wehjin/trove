@@ -1,44 +1,59 @@
 use std::error::Error;
 use std::io::stdout;
 
-use crossterm::{ExecutableCommand, execute, terminal};
+use crossterm::{execute, terminal};
 use crossterm::cursor::MoveTo;
 use crossterm::style::{Color, Print, SetBackgroundColor, SetForegroundColor};
-use crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, is_raw_mode_enabled, LeaveAlternateScreen};
+use crossterm::terminal::Clear;
+use crossterm::terminal::ClearType;
+use crossterm::terminal::disable_raw_mode;
+use crossterm::terminal::DisableLineWrap;
+use crossterm::terminal::enable_raw_mode;
+use crossterm::terminal::EnableLineWrap;
+use crossterm::terminal::EnterAlternateScreen;
+use crossterm::terminal::LeaveAlternateScreen;
 
-pub(crate) struct Console {
-	restore_cooked_mode: bool,
-}
+pub(crate) struct Console;
 
 impl Console {
 	pub fn start() -> Result<Self, Box<dyn Error>> {
-		let restore_cooked_mode = !is_raw_mode_enabled()?;
 		let (cols, rows) = terminal::size()?;
 		enable_raw_mode()?;
-		let msg = format!("{rows} x {cols} chad!");
+		let msg = format!(" {rows} x {cols} chad! ");
+		let upper_half = "▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀";
 		execute!(
 			stdout(),
 			EnterAlternateScreen,
-			MoveTo(5,5),
-			SetForegroundColor(Color::Yellow),
+			DisableLineWrap,
 			SetBackgroundColor(Color::Black),
 			Clear(ClearType::All),
+			SetForegroundColor(Color::Blue),
+			SetBackgroundColor(Color::Black),
+			MoveTo(10,2),
 			Print(&msg),
+			SetForegroundColor(Color::Green),
+			SetBackgroundColor(Color::Black),
+			MoveTo(10,3 ),
+			Print(upper_half),
+			MoveTo(10,5 ),
 		)?;
-		Ok(Self { restore_cooked_mode })
+		Ok(Self)
 	}
 	fn exit(&mut self) -> Result<(), Box<dyn Error>> {
-		if self.restore_cooked_mode {
-			disable_raw_mode()?;
-		}
-		stdout().execute(LeaveAlternateScreen)?;
+		execute!(
+			stdout(),
+			Clear(ClearType::All),
+			LeaveAlternateScreen,
+			EnableLineWrap,
+		)?;
+		disable_raw_mode()?;
 		Ok(())
 	}
 }
 
 impl Drop for Console {
 	fn drop(&mut self) {
-		self.exit().expect("exit");
+		self.exit().expect("exit does not fail");
 	}
 }
 
