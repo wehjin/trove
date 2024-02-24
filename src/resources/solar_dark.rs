@@ -1,8 +1,8 @@
 use crate::resources::Palette16;
 
-pub const SOLAR_DARK_PALETTE16: Palette16 = Palette16 { rgb_u8s: SOLAR_DARK_RGB };
+pub const PALETTE16: Palette16 = Palette16 { rgb_u8s: RGB };
 
-const SOLAR_DARK_RGB: [[u8; 3]; 16] = [
+const RGB: [[u8; 3]; 16] = [
 	[0, 43, 54],        // base03
 	[7, 54, 66],        // base02
 	[88, 110, 117],     // base01
@@ -22,34 +22,34 @@ const SOLAR_DARK_RGB: [[u8; 3]; 16] = [
 ];
 
 #[allow(unused)]
-pub const SOLAR_DARK_BASE03: usize = 0;
+pub const BASE03: usize = 0;
 #[allow(unused)]
-pub const SOLAR_DARK_BASE02: usize = 1;
+pub const BASE02: usize = 1;
 #[allow(unused)]
-pub const SOLAR_DARK_BASE01: usize = 2;
+pub const BASE01: usize = 2;
 #[allow(unused)]
-pub const SOLAR_DARK_BASE00: usize = 3;
+pub const BASE00: usize = 3;
 #[allow(unused)]
-pub const SOLAR_DARK_BASE0: usize = 4;
+pub const BASE0: usize = 4;
 #[allow(unused)]
-pub const SOLAR_DARK_BASE1: usize = 5;
+pub const BASE1: usize = 5;
 #[allow(unused)]
-pub const SOLAR_DARK_BASE2: usize = 6;
+pub const BASE2: usize = 6;
 #[allow(unused)]
-pub const SOLAR_DARK_BASE3: usize = 7;
+pub const BASE3: usize = 7;
 #[allow(unused)]
-pub const SOLAR_DARK_YELLOW: usize = 8;
+pub const YELLOW: usize = 8;
 #[allow(unused)]
-pub const SOLAR_DARK_ORANGE: usize = 9;
+pub const ORANGE: usize = 9;
 #[allow(unused)]
-pub const SOLAR_DARK_RED: usize = 10;
+pub const RED: usize = 10;
 #[allow(unused)]
-pub const SOLAR_DARK_MAGENTA: usize = 11;
+pub const MAGENTA: usize = 11;
 #[allow(unused)]
-pub const SOLAR_DARK_VIOLET: usize = 12;
+pub const VIOLET: usize = 12;
 #[allow(unused)]
-pub const SOLAR_DARK_BLUE: usize = 13;
+pub const BLUE: usize = 13;
 #[allow(unused)]
-pub const SOLAR_DARK_CYAN: usize = 14;
+pub const CYAN: usize = 14;
 #[allow(unused)]
-pub const SOLAR_DARK_GREEN: usize = 15;
+pub const GREEN: usize = 15;

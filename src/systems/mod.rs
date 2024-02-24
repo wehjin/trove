@@ -2,19 +2,44 @@ use bevy::prelude::{Commands, default, Entity, Query, Res, Transform, With};
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 
 use crate::components::{AppAssets, Fill, FillMesh, Glyph, Inset, Renderer, RendererFill, RootRenderer, Volume};
+use crate::resources::solar_dark;
 use crate::tools::console::Console;
 
 pub fn add_root_renderer(mut commands: Commands) {
 	let renderer = Renderer {
 		render: Box::new(|volume| {
 			let (head_volume, body_volume) = volume.split_from_top(1);
-			vec![
-				Fill { glyph: Glyph::Solid(0), volume: body_volume },
-				Fill { glyph: Glyph::Solid(1), volume: head_volume },
-			]
+			let mut vec = vec![
+				Fill { glyph: Glyph::Solid(solar_dark::BASE03), volume: body_volume },
+				Fill { glyph: Glyph::Solid(solar_dark::BASE02), volume: head_volume },
+			];
+			vec.extend(string_to_fills(
+				"hello world!",
+				head_volume.clone().move_closer(1),
+				solar_dark::BASE1,
+			));
+			vec.extend(string_to_fills(
+				"rack the dubs, chad",
+				body_volume.clone().move_closer(1),
+				solar_dark::BASE0,
+			));
+			vec
 		}),
 	};
 	commands.spawn((RootRenderer, renderer));
+}
+
+fn string_to_fills(string: &str, string_volume: Volume, color_index: usize) -> Vec<Fill> {
+	let mut fill_volume = string_volume.with_width_from_left(1).with_height_from_top(1);
+	let mut vec = Vec::new();
+	for i in 0..string.chars().count() {
+		if !&string[i..i + 1].trim().is_empty() {
+			let fill = Fill { glyph: Glyph::Text(color_index), volume: fill_volume.clone() };
+			vec.push(fill);
+		}
+		fill_volume = fill_volume.move_right(1);
+	}
+	vec
 }
 
 pub fn despawn_renderer_fills(query: Query<Entity, With<RendererFill>>, mut commands: Commands) {
@@ -48,8 +73,9 @@ pub fn spawn_fill_meshes(
 ) {
 	let (_cols, rows) = console.width_height();
 	for fill in query.iter() {
-		let color_index = match fill.glyph {
-			Glyph::Solid(color_index) => color_index,
+		let (color_index, mesh_index) = match &fill.glyph {
+			Glyph::Solid(color_index) => (*color_index, 1),
+			Glyph::Text(color_index) => (*color_index, 0),
 		};
 		let transform = {
 			let center = Transform::from_xyz(0.5, -0.5, 0.);
@@ -60,7 +86,7 @@ pub fn spawn_fill_meshes(
 		};
 		let material = app_assets.color_materials[color_index].clone();
 		commands.spawn((FillMesh, MaterialMesh2dBundle {
-			mesh: Mesh2dHandle(app_assets.meshes[1].clone()),
+			mesh: Mesh2dHandle(app_assets.meshes[mesh_index].clone()),
 			material,
 			transform,
 			..default()

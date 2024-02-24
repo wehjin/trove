@@ -25,7 +25,7 @@ pub fn add_app_assets(
 			.map(|c| materials.add(c))
 			.collect::<Vec<_>>(),
 		meshes: vec![
-			meshes.add(Circle { radius: 0.45 }),
+			meshes.add(Circle { radius: 0.30 }),
 			meshes.add(Rectangle::new(1.0, 1.0)),
 		],
 	};

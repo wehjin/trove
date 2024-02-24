@@ -17,7 +17,7 @@ pub struct Renderer {
 #[derive(Component)]
 pub struct FillMesh;
 
-#[derive(Component, Copy, Clone)]
+#[derive(Component, Clone)]
 pub struct Fill {
 	pub glyph: Glyph,
 	pub volume: Volume,
@@ -82,6 +82,24 @@ impl Volume {
 		self.bottom = split;
 		(self, bottom)
 	}
+	pub fn move_closer(mut self, layers: u16) -> Self {
+		self.near += layers as i16;
+		self.far += layers as i16;
+		self
+	}
+	pub fn move_right(mut self, cols: u16) -> Self {
+		self.right += cols as i16;
+		self.left += cols as i16;
+		self
+	}
+	pub fn with_width_from_left(mut self, width: u16) -> Self {
+		self.right = self.left + width as i16;
+		self
+	}
+	pub fn with_height_from_top(mut self, height: u16) -> Self {
+		self.bottom = self.top + height as i16;
+		self
+	}
 	pub fn width(&self) -> i16 {
 		self.right - self.left
 	}
@@ -90,9 +108,10 @@ impl Volume {
 	}
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum Glyph {
-	Solid(usize)
+	Solid(usize),
+	Text(usize),
 }
 
 #[derive(Resource)]

@@ -8,14 +8,14 @@ use systems::console::{add_console, add_panels, flush_console, greet_panels, hel
 use systems::setup::{add_app_assets, setup_camera};
 use tools::console::Console;
 
-use crate::resources::solar_dark::SOLAR_DARK_PALETTE16;
+use crate::resources::solar_dark;
 use crate::systems::{add_root_renderer, despawn_fill_meshes, despawn_renderer_fills, spawn_fill_meshes, spawn_renderer_fills};
 
 fn main() -> Result<(), Box<dyn Error>> {
 	Console::start()?;
 	App::new()
 		.add_plugins(DefaultPlugins)
-		.insert_resource(SOLAR_DARK_PALETTE16)
+		.insert_resource(solar_dark::PALETTE16)
 		.add_systems(Startup, add_console)
 		.add_systems(Startup, add_app_assets)
 		.add_systems(Startup, setup_camera.after(add_console))
