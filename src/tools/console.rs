@@ -49,7 +49,7 @@ impl Console {
 		stdout().flush().expect("flush");
 	}
 
-	pub fn print(&self, msg: &str) {
+	pub fn _print(&self, msg: &str) {
 		let (cols, rows) = terminal::size().expect("size");
 		let title = format!(" {rows} x {cols} {msg} ");
 		let underline = (0..title.len()).map(|_| '▀').collect::<String>();

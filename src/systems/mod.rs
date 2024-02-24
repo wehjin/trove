@@ -1,52 +1,37 @@
-use bevy::asset::Assets;
-use bevy::prelude::{Camera2dBundle, Circle, ColorMaterial, Commands, default, Entity, Mesh, Query, Rectangle, Res, ResMut, Transform, With};
-use bevy::render::camera::ScalingMode;
+use bevy::prelude::{Commands, default, Entity, Query, Res, Transform, With};
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
-use crate::components::{AppAssets, OrthoCam, Fill, FillMesh, Glyph, Volume};
+
+use crate::components::{AppAssets, Fill, FillMesh, Glyph, Inset, Renderer, RendererFill, RootRenderer, Volume};
 use crate::tools::console::Console;
-use crate::resources::Palette16;
 
-pub fn setup_camera(mut commands: Commands, console: Res<Console>) {
-	let (width, height) = console.width_height();
-	let mut camera = Camera2dBundle { ..default() };
-	camera.projection.scaling_mode = ScalingMode::Fixed { width: width as f32, height: height as f32 };
-	camera.projection.viewport_origin = (0., 0.).into();
-	commands.spawn((OrthoCam, camera));
-}
-
-pub fn add_app_assets(
-	palette: Res<Palette16>,
-	mut materials: ResMut<Assets<ColorMaterial>>,
-	mut meshes: ResMut<Assets<Mesh>>,
-	mut commands: Commands,
-) {
-	let app_assets = AppAssets {
-		color_materials: palette.to_colors()
-			.into_iter()
-			.map(|c| materials.add(c))
-			.collect::<Vec<_>>(),
-		meshes: vec![
-			meshes.add(Circle { radius: 0.45 }),
-			meshes.add(Rectangle::new(1.0, 1.0)),
-		],
+pub fn add_root_renderer(mut commands: Commands) {
+	let renderer = Renderer {
+		render: Box::new(|volume| {
+			let (head_volume, body_volume) = volume.split_from_top(1);
+			vec![
+				Fill { glyph: Glyph::Solid(0), volume: body_volume },
+				Fill { glyph: Glyph::Solid(1), volume: head_volume },
+			]
+		}),
 	};
-	commands.insert_resource(app_assets);
+	commands.spawn((RootRenderer, renderer));
 }
 
-pub fn add_fills(console: Res<Console>, mut commands: Commands) {
+pub fn despawn_renderer_fills(query: Query<Entity, With<RendererFill>>, mut commands: Commands) {
+	for entity in query.iter() {
+		commands.entity(entity).despawn();
+	}
+}
+
+pub fn spawn_renderer_fills(query: Query<&Renderer, With<RootRenderer>>, console: Res<Console>, mut commands: Commands) {
 	let (cols, rows) = console.width_height();
-	let fills = [
-		Fill {
-			glyph: Glyph::Solid(0),
-			volume: Volume { left: 1, top: 2, far: 0, right: cols as i16 - 1, bottom: rows as i16 - 1, near: 1 },
-		},
-		Fill {
-			glyph: Glyph::Solid(1),
-			volume: Volume { left: 1, top: 1, far: 0, right: cols as i16 - 1, bottom: 2, near: 1 },
-		},
-	];
-	commands.spawn(fills[0]);
-	commands.spawn(fills[1]);
+	for renderer in query.iter() {
+		let volume = Volume::from_cols_rows_near(cols, rows, 1).inset(Inset::DoubleCols(1));
+		let fills: Vec<Fill> = (renderer.render)(volume);
+		for fill in fills {
+			commands.spawn((RendererFill, fill));
+		}
+	}
 }
 
 pub fn despawn_fill_meshes(query: Query<Entity, With<FillMesh>>, mut commands: Commands) {
@@ -102,3 +87,4 @@ pub fn add_circles(mut commands: Commands, palette_mesh: Res<AppAssets>, console
 }
 
 pub mod console;
+pub mod setup;
