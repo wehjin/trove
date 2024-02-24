@@ -2,7 +2,7 @@ use bevy::prelude::{Commands, Query, Res, ResMut, With};
 use crossterm::style;
 use crossterm::event::read;
 use crate::components::console::{Panel, Position};
-use crate::console::Console;
+use crate::tools::console::Console;
 
 pub fn add_console(mut commands: Commands) {
 	let console = Console::start().expect("start");

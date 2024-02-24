@@ -3,7 +3,7 @@ use std::error::Error;
 use bevy::DefaultPlugins;
 use bevy::prelude::{App, IntoSystemConfigs, Startup, Update};
 
-use console::Console;
+use tools::console::Console;
 use systems::{add_app_assets, add_circles, setup_camera};
 use systems::console::{add_console, add_panels, flush_console, greet_panels, hello_world};
 
@@ -32,6 +32,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 mod components;
-mod console;
 mod resources;
 mod systems;
+mod tools;

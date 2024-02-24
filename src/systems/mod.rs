@@ -3,7 +3,7 @@ use bevy::prelude::{Camera2dBundle, Circle, ColorMaterial, Commands, default, En
 use bevy::render::camera::ScalingMode;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use crate::components::{AppAssets, OrthoCam, Fill, FillMesh, Glyph, Volume};
-use crate::console::Console;
+use crate::tools::console::Console;
 use crate::resources::Palette16;
 
 pub fn setup_camera(mut commands: Commands, console: Res<Console>) {
