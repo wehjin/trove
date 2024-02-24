@@ -3,7 +3,8 @@ use crate::components::layout::{Louter, LouterRenderer, RootLouter};
 use crate::components::render::Renderer;
 use crate::tools;
 use crate::tools::console::Console;
-use crate::tools::{Inset, Volume};
+use crate::tools::inset::Inset;
+use crate::tools::volume::Volume;
 
 pub fn spawn_louter_renderers(query: Query<&Louter, With<RootLouter>>, console: Res<Console>, mut commands: Commands) {
 	let (cols, rows) = console.width_height();

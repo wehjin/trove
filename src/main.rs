@@ -12,7 +12,12 @@ use systems::setup::{add_app_assets, setup_camera};
 use tools::console::Console;
 
 use crate::resources::solar_dark;
-use systems::layout::add_root_louter;
+use crate::systems::layout::add_root_louter;
+
+mod components;
+mod resources;
+mod systems;
+mod tools;
 
 fn main() -> Result<(), Box<dyn Error>> {
 	Console::start()?;
@@ -39,8 +44,3 @@ fn main() -> Result<(), Box<dyn Error>> {
 	Console::stop()?;
 	Ok(())
 }
-
-mod components;
-mod resources;
-mod systems;
-mod tools;

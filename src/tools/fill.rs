@@ -1,5 +1,5 @@
 use crate::components::fill::Fill;
-use crate::tools::Volume;
+use crate::tools::volume::Volume;
 
 pub fn string_to_fills(string: &str, string_volume: Volume, color_index: usize) -> Vec<Fill> {
 	let mut fill_volume = string_volume.with_width_from_left(1).with_height_from_top(1);

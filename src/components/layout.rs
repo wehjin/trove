@@ -1,6 +1,6 @@
 use bevy::prelude::Component;
 use crate::components::render::Renderer;
-use crate::tools::Volume;
+use crate::tools::volume::Volume;
 
 #[derive(Component)]
 pub struct Louter {

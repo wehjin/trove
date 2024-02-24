@@ -1,6 +1,6 @@
 use bevy::prelude::Component;
 use crate::tools::fill::Glyph;
-use crate::tools::Volume;
+use crate::tools::volume::Volume;
 
 #[derive(Component)]
 pub struct FillMesh;
