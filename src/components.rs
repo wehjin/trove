@@ -70,5 +70,5 @@ impl Volume {
 
 #[derive(Copy, Clone)]
 pub enum Glyph {
-	SolidRed
+	Solid(usize)
 }

@@ -37,15 +37,15 @@ pub fn add_app_assets(
 }
 
 pub fn add_fills(console: Res<Console>, mut commands: Commands) {
-	let (cols, _rows) = console.width_height();
+	let (cols, rows) = console.width_height();
 	let fills = [
 		Fill {
-			glyph: Glyph::SolidRed,
-			volume: Volume { left: 1, top: 1, far: 0, right: 21, bottom: 11, near: 1 },
+			glyph: Glyph::Solid(0),
+			volume: Volume { left: 1, top: 2, far: 0, right: cols as i16 - 1, bottom: rows as i16 - 1, near: 1 },
 		},
 		Fill {
-			glyph: Glyph::SolidRed,
-			volume: Volume { left: 0, top: 0, far: 0, right: cols as i16, bottom: 1, near: 1 },
+			glyph: Glyph::Solid(1),
+			volume: Volume { left: 1, top: 1, far: 0, right: cols as i16 - 1, bottom: 2, near: 1 },
 		},
 	];
 	commands.spawn(fills[0]);
@@ -60,20 +60,26 @@ pub fn despawn_fill_meshes(query: Query<Entity, With<FillMesh>>, mut commands: C
 
 pub fn spawn_fill_meshes(
 	query: Query<&Fill>,
-	palette_mesh: Res<AppAssets>,
+	app_assets: Res<AppAssets>,
 	console: Res<Console>,
 	mut commands: Commands,
 ) {
 	let (_cols, rows) = console.width_height();
 	for fill in query.iter() {
-		let center = Transform::from_xyz(0.5, -0.5, 0.);
-		let scale = Transform::from_scale((fill.width(), fill.height(), 1.).into());
-		let shift = Transform::from_xyz(fill.left(), rows as f32 - fill.top(), fill.near());
-		let together = shift.compute_matrix().mul_mat4(&scale.compute_matrix()).mul_mat4(&center.compute_matrix());
-		let transform = Transform::from_matrix(together);
+		let color_index = match fill.glyph {
+			Glyph::Solid(color_index) => color_index,
+		};
+		let transform = {
+			let center = Transform::from_xyz(0.5, -0.5, 0.);
+			let scale = Transform::from_scale((fill.width(), fill.height(), 1.).into());
+			let shift = Transform::from_xyz(fill.left(), rows as f32 - fill.top(), fill.near());
+			let together = shift.compute_matrix().mul_mat4(&scale.compute_matrix()).mul_mat4(&center.compute_matrix());
+			Transform::from_matrix(together)
+		};
+		let material = app_assets.color_materials[color_index].clone();
 		commands.spawn((FillMesh, MaterialMesh2dBundle {
-			mesh: Mesh2dHandle(palette_mesh.meshes[1].clone()),
-			material: palette_mesh.color_materials[8].clone(),
+			mesh: Mesh2dHandle(app_assets.meshes[1].clone()),
+			material,
 			transform,
 			..default()
 		}));
@@ -86,10 +92,10 @@ pub fn add_circles(mut commands: Commands, palette_mesh: Res<AppAssets>, console
 		let y = row as f32 + 0.5;
 		for col in 0..width {
 			let x = col as f32 + 0.5;
-			if (col % 10) != 0 {
+			if (col % 10) != 9 {
 				commands.spawn(MaterialMesh2dBundle {
 					mesh: Mesh2dHandle(palette_mesh.meshes[0].clone()),
-					material: palette_mesh.color_materials[if (row as usize % 2) == 0 { 0 } else { 4 }].clone(),
+					material: palette_mesh.color_materials[if ((row + col) as usize % 2) == 0 { 12 } else { 14 }].clone(),
 					transform: Transform::from_xyz(x, y, 0.0),
 					..default()
 				});

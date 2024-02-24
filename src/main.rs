@@ -6,14 +6,14 @@ use bevy::prelude::{App, IntoSystemConfigs, Startup, Update};
 use console::Console;
 use systems::{add_app_assets, add_circles, add_console, add_panels, flush_console, greet_panels, hello_world, setup_camera};
 
-use crate::resources::Palette16;
+use crate::resources::solar_dark::SOLAR_DARK_PALETTE16;
 use crate::systems::{add_fills, despawn_fill_meshes, spawn_fill_meshes};
 
 fn main() -> Result<(), Box<dyn Error>> {
 	Console::start()?;
 	App::new()
 		.add_plugins(DefaultPlugins)
-		.insert_resource(Palette16::SOLAR_DARK)
+		.insert_resource(SOLAR_DARK_PALETTE16)
 		.add_systems(Startup, add_console)
 		.add_systems(Startup, add_app_assets)
 		.add_systems(Startup, setup_camera.after(add_console))
