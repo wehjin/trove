@@ -1,7 +1,7 @@
 use bevy::prelude::{Camera2dBundle, Circle, ColorMaterial, Commands, default, Mesh, Rectangle, Res, ResMut};
 use bevy::asset::Assets;
 use bevy::render::camera::ScalingMode;
-use crate::components::{AppAssets, OrthoCam};
+use crate::components::setup::{AppAssets, OrthoCam};
 use crate::resources::Palette16;
 use crate::tools::console::Console;
 
