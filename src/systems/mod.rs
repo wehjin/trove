@@ -2,10 +2,7 @@ use bevy::asset::Assets;
 use bevy::prelude::{Camera2dBundle, Circle, ColorMaterial, Commands, default, Entity, Mesh, Query, Rectangle, Res, ResMut, Transform, With};
 use bevy::render::camera::ScalingMode;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
-use crossterm::event::read;
-use crossterm::style;
-
-use crate::components::{AppAssets, AppCamera, Fill, FillMesh, Glyph, Panel, Position, Volume};
+use crate::components::{AppAssets, OrthoCam, Fill, FillMesh, Glyph, Volume};
 use crate::console::Console;
 use crate::resources::Palette16;
 
@@ -14,7 +11,7 @@ pub fn setup_camera(mut commands: Commands, console: Res<Console>) {
 	let mut camera = Camera2dBundle { ..default() };
 	camera.projection.scaling_mode = ScalingMode::Fixed { width: width as f32, height: height as f32 };
 	camera.projection.viewport_origin = (0., 0.).into();
-	commands.spawn((AppCamera, camera));
+	commands.spawn((OrthoCam, camera));
 }
 
 pub fn add_app_assets(
@@ -104,31 +101,4 @@ pub fn add_circles(mut commands: Commands, palette_mesh: Res<AppAssets>, console
 	}
 }
 
-pub fn add_console(mut commands: Commands) {
-	let console = Console::start().expect("start");
-	commands.insert_resource(console);
-}
-
-pub fn _await_human() {
-	read().expect("read");
-}
-
-pub fn add_panels(mut commands: Commands) {
-	commands.spawn((Panel, Position { left: 0, top: 15, right: 20, bottom: 20, near: 0, far: 0 }));
-	commands.spawn((Panel, Position { left: 35, top: 5, right: 40, bottom: 40, near: 0, far: 0 }));
-}
-
-pub fn hello_world(console: Res<Console>) {
-	console.move_print(0, 0, "hello world!");
-}
-
-pub fn greet_panels(console: Res<Console>, query: Query<&Position, With<Panel>>) {
-	for pos in &query {
-		console.color(pos, style::Color::Green);
-	}
-}
-
-pub fn flush_console(mut console: ResMut<Console>) {
-	console.flush();
-}
-
+pub mod console;

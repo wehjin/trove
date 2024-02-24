@@ -4,7 +4,8 @@ use bevy::DefaultPlugins;
 use bevy::prelude::{App, IntoSystemConfigs, Startup, Update};
 
 use console::Console;
-use systems::{add_app_assets, add_circles, add_console, add_panels, flush_console, greet_panels, hello_world, setup_camera};
+use systems::{add_app_assets, add_circles, setup_camera};
+use systems::console::{add_console, add_panels, flush_console, greet_panels, hello_world};
 
 use crate::resources::solar_dark::SOLAR_DARK_PALETTE16;
 use crate::systems::{add_fills, despawn_fill_meshes, spawn_fill_meshes};

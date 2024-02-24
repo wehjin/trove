@@ -1,7 +1,7 @@
 use bevy::prelude::{ColorMaterial, Component, Handle, Mesh, Resource};
 
 #[derive(Component)]
-pub struct AppCamera;
+pub struct OrthoCam;
 
 #[derive(Component)]
 pub struct Panel;
