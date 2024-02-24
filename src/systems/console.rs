@@ -1,7 +1,7 @@
 use bevy::prelude::{Commands, Query, Res, ResMut, With};
 use crossterm::style;
 use crossterm::event::read;
-use crate::components::{Panel, Position};
+use crate::components::console::{Panel, Position};
 use crate::console::Console;
 
 pub fn add_console(mut commands: Commands) {

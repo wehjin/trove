@@ -14,7 +14,7 @@ use crossterm::terminal::EnableLineWrap;
 use crossterm::terminal::EnterAlternateScreen;
 use crossterm::terminal::LeaveAlternateScreen;
 
-use crate::components::Position;
+use crate::components::console::Position;
 
 #[derive(Resource)]
 pub struct Console;
