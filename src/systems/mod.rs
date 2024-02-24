@@ -1,9 +1,9 @@
 use bevy::prelude::{Commands, Component, default, Entity, Query, Res, Transform, With};
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 
-use crate::components::{View, Viewer};
-use crate::components::layout::{LayoutFn, Louter};
-use crate::components::render::Renderer;
+use crate::components::{View, ViewModel};
+use crate::components::layout::{Layout, LayoutFn};
+use crate::components::render::Render;
 use crate::components::setup::AppAssets;
 use crate::tools;
 use crate::tools::console::Console;
@@ -34,47 +34,47 @@ pub fn add_circles(mut commands: Commands, palette_mesh: Res<AppAssets>, console
 	}
 }
 
-pub struct SampleView;
+pub struct SampleApp;
 
-impl View<()> for SampleView {
-	fn to_louters(&self) -> Vec<Louter> {
-		let louter = Louter { layout: sample_layout() };
+impl ViewModel<()> for SampleApp {
+	fn to_layouts(&self) -> Vec<Layout> {
+		let louter = Layout { layout: sample_layout() };
 		vec![louter]
 	}
 }
 
-#[derive(Component)]
-pub struct RootViewer;
-
-pub fn add_root_viewer(mut commands: Commands) {
-	let viewer = Viewer {
-		view: Box::new(SampleView {}),
+pub fn add_root_view(mut commands: Commands) {
+	let view = View {
+		view_model: Box::new(SampleApp {}),
 	};
-	commands.spawn((RootViewer, viewer));
+	commands.spawn((RootView, view));
 }
 
-pub fn spawn_viewer_louters<ViewMsg: 'static>(query: Query<&Viewer<ViewMsg>, With<RootViewer>>, mut commands: Commands) {
-	for viewer in query.iter() {
-		for louter in viewer.view.to_louters() {
-			commands.spawn((ViewerLouter, louter));
+#[derive(Component)]
+pub struct RootView;
+
+pub fn spawn_view_layouts<ViewMsg: 'static>(query: Query<&View<ViewMsg>, With<RootView>>, mut commands: Commands) {
+	for view in query.iter() {
+		for louter in view.view_model.to_layouts() {
+			commands.spawn((ViewLayout, louter));
 		}
 	}
 }
 
-pub fn despawn_viewer_louters(query: Query<Entity, With<ViewerLouter>>, mut commands: Commands) {
+pub fn despawn_view_layouts(query: Query<Entity, With<ViewLayout>>, mut commands: Commands) {
 	for entity in query.iter() {
 		commands.entity(entity).despawn();
 	}
 }
 
 #[derive(Component)]
-pub struct ViewerLouter;
+pub struct ViewLayout;
 
 
 fn sample_layout() -> Box<LayoutFn> {
 	let layout = Box::new(|volume: Volume| {
 		let volume = volume.inset(Inset::DoubleCols(1));
-		vec![Renderer { volume, render: tools::render::sample_render() }]
+		vec![Render { volume, render: tools::render::sample_render() }]
 	});
 	layout
 }

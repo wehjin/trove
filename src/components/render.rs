@@ -1,12 +1,13 @@
 use bevy::prelude::Component;
+
 use crate::components::fill::Fill;
 use crate::tools::volume::Volume;
 
 #[derive(Component)]
-pub struct RendererFill;
+pub struct RenderFill;
 
 #[derive(Component)]
-pub struct Renderer {
+pub struct Render {
 	pub volume: Volume,
 	pub render: Box<RenderFn>,
 }

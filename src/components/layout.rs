@@ -1,14 +1,14 @@
 use bevy::prelude::Component;
 
-use crate::components::render::Renderer;
+use crate::components::render::Render;
 use crate::tools::volume::Volume;
 
 #[derive(Component)]
-pub struct Louter {
+pub struct Layout {
 	pub layout: Box<LayoutFn>,
 }
 
-pub type LayoutFn = dyn Fn(Volume) -> Vec<Renderer> + Send + Sync;
+pub type LayoutFn = dyn Fn(Volume) -> Vec<Render> + Send + Sync;
 
 #[derive(Component)]
-pub struct LouterRenderer;
+pub struct LayoutRender;
