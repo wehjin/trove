@@ -12,7 +12,7 @@ use systems::setup::{add_app_assets, setup_camera};
 use tools::console::Console;
 
 use crate::resources::solar_dark;
-use crate::systems::layout::add_root_louter;
+use crate::systems::{add_root_viewer, despawn_viewer_louters, spawn_viewer_louters};
 
 mod components;
 mod resources;
@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 		.add_systems(Startup, setup_camera.after(add_console))
 		.add_systems(Startup, add_panels.after(add_console))
 		.add_systems(Startup, add_circles.after(add_console).after(add_app_assets))
-		.add_systems(Startup, add_root_louter)
+		.add_systems(Startup, add_root_viewer)
 
 		.add_systems(Update, flush_console)
 		.add_systems(Update, hello_world.before(flush_console))
@@ -37,7 +37,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 		.add_systems(Update, despawn_fill_meshes)
 		.add_systems(Update, despawn_renderer_fills.after(despawn_fill_meshes))
 		.add_systems(Update, despawn_louter_renderers.after(despawn_renderer_fills))
-		.add_systems(Update, spawn_louter_renderers.after(despawn_louter_renderers))
+		.add_systems(Update, despawn_viewer_louters.after(despawn_louter_renderers))
+		.add_systems(Update, spawn_viewer_louters::<()>.after(despawn_viewer_louters))
+		.add_systems(Update, spawn_louter_renderers.after(spawn_viewer_louters::<()>))
 		.add_systems(Update, spawn_renderer_fills.after(spawn_louter_renderers))
 		.add_systems(Update, spawn_fill_meshes.after(spawn_renderer_fills))
 		.run();
