@@ -4,10 +4,10 @@ use crate::components::fill::Fill;
 use crate::tools::volume::Volume;
 
 #[derive(Component)]
-pub struct RenderFill;
+pub struct RendererFill;
 
 #[derive(Component)]
-pub struct Render {
+pub struct Renderer {
 	pub volume: Volume,
 	pub render: Box<RenderFn>,
 }

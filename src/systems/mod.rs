@@ -1,10 +1,12 @@
-use bevy::prelude::{Commands, Component, default, Entity, Query, Res, Transform, With};
+use bevy::prelude::{Commands, default, Res, Transform};
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 
-use crate::components::{View, ViewModel};
+use view::RootView;
+
 use crate::components::layout::{Layout, LayoutFn};
-use crate::components::render::Render;
+use crate::components::render::Renderer;
 use crate::components::setup::AppAssets;
+use crate::components::view::{View, ViewModel};
 use crate::tools;
 use crate::tools::console::Console;
 use crate::tools::inset::Inset;
@@ -15,6 +17,7 @@ pub mod fill;
 pub mod layout;
 pub mod render;
 pub mod setup;
+pub mod view;
 
 pub fn add_circles(mut commands: Commands, palette_mesh: Res<AppAssets>, console: Res<Console>) {
 	let (width, height) = console.width_height();
@@ -43,38 +46,15 @@ impl ViewModel<()> for SampleApp {
 	}
 }
 
-pub fn add_root_view(mut commands: Commands) {
-	let view = View {
-		view_model: Box::new(SampleApp {}),
-	};
-	commands.spawn((RootView, view));
-}
-
-#[derive(Component)]
-pub struct RootView;
-
-pub fn spawn_view_layouts<ViewMsg: 'static>(query: Query<&View<ViewMsg>, With<RootView>>, mut commands: Commands) {
-	for view in query.iter() {
-		for louter in view.view_model.to_layouts() {
-			commands.spawn((ViewLayout, louter));
-		}
-	}
-}
-
-pub fn despawn_view_layouts(query: Query<Entity, With<ViewLayout>>, mut commands: Commands) {
-	for entity in query.iter() {
-		commands.entity(entity).despawn();
-	}
-}
-
-#[derive(Component)]
-pub struct ViewLayout;
-
-
 fn sample_layout() -> Box<LayoutFn> {
 	let layout = Box::new(|volume: Volume| {
 		let volume = volume.inset(Inset::DoubleCols(1));
-		vec![Render { volume, render: tools::render::sample_render() }]
+		vec![Renderer { volume, render: tools::render::sample_render() }]
 	});
 	layout
+}
+
+pub fn add_root_view(mut commands: Commands) {
+	let view = View { model: Box::new(SampleApp {}) };
+	commands.spawn((RootView, view));
 }
