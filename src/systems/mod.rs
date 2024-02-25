@@ -5,7 +5,7 @@ use crate::components::setup::AppAssets;
 use crate::components::view::RootView;
 use crate::components::view::View;
 use crate::tools::console::Console;
-use crate::tools::SampleApp;
+use crate::tools::sample::SampleApp;
 
 pub mod console;
 pub mod fill;

@@ -1,7 +1,6 @@
 use bevy::prelude::{Commands, Entity, Query, With};
 
-use crate::components::fill::Fill;
-use crate::components::render::{RendererMadeFill, Renderer};
+use crate::components::render::{Renderer, RendererMadeFill};
 
 pub fn despawn_renderer_fills(query: Query<Entity, With<RendererMadeFill>>, mut commands: Commands) {
 	for entity in query.iter() {
@@ -11,8 +10,7 @@ pub fn despawn_renderer_fills(query: Query<Entity, With<RendererMadeFill>>, mut 
 
 pub fn spawn_renderer_fills(query: Query<&Renderer>, mut commands: Commands) {
 	for renderer in query.iter() {
-		let fills: Vec<Fill> = (renderer.render)();
-		for fill in fills {
+		for fill in renderer.render.run_render() {
 			commands.spawn((RendererMadeFill, fill));
 		}
 	}

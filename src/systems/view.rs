@@ -11,8 +11,6 @@ pub fn despawn_view_layouts(query: Query<Entity, With<ViewMadeLayout>>, mut comm
 
 pub fn spawn_root_view_layouts<ViewMsg: 'static>(query: Query<&View<ViewMsg>, With<RootView>>, mut commands: Commands) {
 	let view = query.single();
-	for renderer in view.model.to_layouts() {
-		let layout = Louter { layout: renderer };
-		commands.spawn((ViewMadeLayout, layout, RootLouter));
-	}
+	let layout = Louter { layout: view.model.to_layout() };
+	commands.spawn((ViewMadeLayout, layout, RootLouter));
 }

@@ -15,11 +15,9 @@ pub fn spawn_root_layout_renderers(query: Query<&Louter, With<RootLouter>>, cons
 	let (cols, rows) = console.width_height();
 	// TODO Fix this for non-root layouts. It is correct only for root layouts.
 	let volume = Volume::from_cols_rows_near(cols, rows, 1);
-	for layout in query.iter() {
-		let renders = (layout.layout)(volume);
-		for filler in renders {
-			let filler_component = Renderer { render: filler };
-			commands.spawn((LouterMadeRenderer, filler_component));
-		}
+	let louter = query.single();
+	let renders = louter.layout.run_layout(volume);
+	for render in renders {
+		commands.spawn((LouterMadeRenderer, Renderer { render }));
 	}
 }
