@@ -1,11 +1,12 @@
 use bevy::prelude::{Commands, default, Entity, Query, Res, Transform, With};
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
-use crate::components::fill::{Fill, FillMesh};
+
+use crate::components::fill::{Fill, FillMadeMesh};
 use crate::components::setup::AppAssets;
 use crate::tools::console::Console;
 use crate::tools::fill::Glyph;
 
-pub fn despawn_fill_meshes(query: Query<Entity, With<FillMesh>>, mut commands: Commands) {
+pub fn despawn_fill_meshes(query: Query<Entity, With<FillMadeMesh>>, mut commands: Commands) {
 	for entity in query.iter() {
 		commands.entity(entity).despawn();
 	}
@@ -26,7 +27,7 @@ pub fn spawn_fill_meshes(query: Query<&Fill>, app_assets: Res<AppAssets>, consol
 			Transform::from_matrix(together)
 		};
 		let material = app_assets.color_materials[color_index].clone();
-		commands.spawn((FillMesh, MaterialMesh2dBundle {
+		commands.spawn((FillMadeMesh, MaterialMesh2dBundle {
 			mesh: Mesh2dHandle(app_assets.meshes[mesh_index].clone()),
 			material,
 			transform,
@@ -34,4 +35,3 @@ pub fn spawn_fill_meshes(query: Query<&Fill>, app_assets: Res<AppAssets>, consol
 		}));
 	}
 }
-

@@ -1,16 +1,11 @@
 use bevy::prelude::{Commands, default, Res, Transform};
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 
-use crate::components::view::RootView;
-
-use crate::components::layout::VolumeRenderer;
-use crate::components::render::VolumeFillComponent;
 use crate::components::setup::AppAssets;
-use crate::components::view::{View, ViewModel};
-use crate::tools;
+use crate::components::view::RootView;
+use crate::components::view::View;
 use crate::tools::console::Console;
-use crate::tools::inset::Inset;
-use crate::tools::volume::Volume;
+use crate::tools::SampleApp;
 
 pub mod console;
 pub mod fill;
@@ -35,19 +30,6 @@ pub fn add_circles(mut commands: Commands, palette_mesh: Res<AppAssets>, console
 			}
 		}
 	}
-}
-
-pub struct SampleApp;
-
-impl ViewModel<()> for SampleApp {
-	fn to_volume_renderers(&self) -> Vec<Box<VolumeRenderer>> {
-		vec![Box::new(sample_layout)]
-	}
-}
-
-fn sample_layout(volume: Volume) -> Vec<VolumeFillComponent> {
-	let volume = volume.inset(Inset::DoubleCols(1));
-	vec![VolumeFillComponent { volume, fill: tools::render::sample_fill_builder() }]
 }
 
 pub fn add_root_view(mut commands: Commands) {

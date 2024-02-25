@@ -1,10 +1,9 @@
 use bevy::prelude::Component;
 
-use crate::components::layout::VolumeRenderer;
+use crate::tools::ViewModel;
 
-pub trait ViewModel<ViewMsg> {
-	fn to_volume_renderers(&self) -> Vec<Box<VolumeRenderer>>;
-}
+#[derive(Component)]
+pub struct ViewMadeLayout;
 
 #[derive(Component)]
 pub struct View<Msg> {
@@ -13,7 +12,4 @@ pub struct View<Msg> {
 
 #[derive(Component)]
 pub struct RootView;
-
-#[derive(Component)]
-pub struct TempVolumeRenderer;
 

@@ -1,19 +1,19 @@
 use bevy::prelude::{Commands, Entity, Query, With};
 
 use crate::components::fill::Fill;
-use crate::components::render::{VolumeFillComponent, EphemeralFill};
+use crate::components::render::{RendererMadeFill, Renderer};
 
-pub fn despawn_rendering_fills(query: Query<Entity, With<EphemeralFill>>, mut commands: Commands) {
+pub fn despawn_renderer_fills(query: Query<Entity, With<RendererMadeFill>>, mut commands: Commands) {
 	for entity in query.iter() {
 		commands.entity(entity).despawn();
 	}
 }
 
-pub fn spawn_rendering_fills(query: Query<&VolumeFillComponent>, mut commands: Commands) {
+pub fn spawn_renderer_fills(query: Query<&Renderer>, mut commands: Commands) {
 	for renderer in query.iter() {
-		let fills: Vec<Fill> = (renderer.fill)(renderer.volume);
+		let fills: Vec<Fill> = (renderer.render)();
 		for fill in fills {
-			commands.spawn((EphemeralFill, fill));
+			commands.spawn((RendererMadeFill, fill));
 		}
 	}
 }
