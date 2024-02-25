@@ -1,5 +1,5 @@
 use crate::components::fill::Fill;
-use crate::tools::volume::Volume;
+use crate::tools::volume::ZRect;
 
 pub mod console;
 pub mod fill;
@@ -14,7 +14,7 @@ pub trait ViewModel<ViewMsg> {
 }
 
 pub trait Layout {
-	fn run_layout(&self, volume: Volume) -> Vec<Box<dyn Render + Send + Sync>>;
+	fn run_layout(&self, volume: ZRect) -> Vec<Box<dyn Render + Send + Sync>>;
 }
 
 pub trait Render {

@@ -1,7 +1,7 @@
 use bevy::prelude::Component;
 
 use crate::tools::fill::Glyph;
-use crate::tools::volume::Volume;
+use crate::tools::volume::ZRect;
 
 #[derive(Component)]
 pub struct FillMadeMesh;
@@ -9,7 +9,7 @@ pub struct FillMadeMesh;
 #[derive(Component, Clone)]
 pub struct Fill {
 	pub glyph: Glyph,
-	pub volume: Volume,
+	pub volume: ZRect,
 }
 
 impl Fill {
@@ -26,6 +26,6 @@ impl Fill {
 		self.volume.height() as f32
 	}
 	pub fn near(&self) -> f32 {
-		self.volume.near as f32
+		self.volume.z as f32
 	}
 }

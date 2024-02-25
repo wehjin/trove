@@ -3,7 +3,7 @@ use crate::resources::solar_dark;
 use crate::tools::{Layout, Render, RenderBox, ViewModel};
 use crate::tools::fill::{Glyph, string_to_fills};
 use crate::tools::inset::Inset;
-use crate::tools::volume::Volume;
+use crate::tools::volume::ZRect;
 
 pub struct SampleApp;
 
@@ -16,7 +16,7 @@ impl ViewModel<()> for SampleApp {
 struct MyLayout {}
 
 impl Layout for MyLayout {
-	fn run_layout(&self, volume: Volume) -> Vec<RenderBox> {
+	fn run_layout(&self, volume: ZRect) -> Vec<RenderBox> {
 		let volume = volume.inset(Inset::DoubleCols(1)).move_closer(1);
 		let (head_volume, body_volume) = volume.split_from_top(1);
 		vec![
@@ -26,7 +26,7 @@ impl Layout for MyLayout {
 	}
 }
 
-struct TitleRender(Volume);
+struct TitleRender(ZRect);
 
 impl Render for TitleRender {
 	fn run_render(&self) -> Vec<Fill> {
@@ -38,7 +38,7 @@ impl Render for TitleRender {
 	}
 }
 
-struct BodyRender(Volume);
+struct BodyRender(ZRect);
 
 impl Render for BodyRender {
 	fn run_render(&self) -> Vec<Fill> {
