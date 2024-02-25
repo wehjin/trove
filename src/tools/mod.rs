@@ -14,8 +14,8 @@ pub trait ViewModel<ViewMsg> {
 	fn to_layouts(&self) -> Vec<Box<LayoutFn>>;
 }
 
+// TODO Clean this up, too hard to use.  Maybe LayoutRenderer becomes Renderer?
 pub type LayoutFn = dyn Fn(Volume) -> Vec<Box<RenderFn>> + Send + Sync;
-
 pub type RenderFn = dyn Fn() -> Vec<Fill> + Send + Sync;
 
 pub struct SampleApp;
