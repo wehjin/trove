@@ -1,10 +1,10 @@
-use crate::components::render::RenderFn;
 use crate::components::fill::Fill;
+use crate::components::render::FillFn;
 use crate::resources::solar_dark;
 use crate::tools::fill;
 use crate::tools::fill::Glyph;
 
-pub fn sample_render() -> Box<RenderFn> {
+pub fn sample_fill_builder() -> Box<FillFn> {
 	Box::new(|volume| {
 		let (head_volume, body_volume) = volume.split_from_top(1);
 		let mut vec = vec![

@@ -1,17 +1,17 @@
 use bevy::prelude::Component;
 
-use crate::components::render::Renderer;
+use crate::components::render::VolumeFillComponent;
 use crate::tools::volume::Volume;
 
 #[derive(Component)]
-pub struct Layout {
-	pub layout: Box<LayoutFn>,
+pub struct VolumeRendererComponent {
+	pub render_volume: Box<VolumeRenderer>,
 }
 
-pub type LayoutFn = dyn Fn(Volume) -> Vec<Renderer> + Send + Sync;
+pub type VolumeRenderer = dyn Fn(Volume) -> Vec<VolumeFillComponent> + Send + Sync;
 
 #[derive(Component)]
-pub struct LayoutRender;
+pub struct VolumeRendererSeatedRenderer;
 
 #[derive(Component)]
-pub struct RootLayout;
+pub struct RootVolumeRenderer;

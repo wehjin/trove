@@ -4,12 +4,12 @@ use crate::components::fill::Fill;
 use crate::tools::volume::Volume;
 
 #[derive(Component)]
-pub struct RendererFill;
-
-#[derive(Component)]
-pub struct Renderer {
+pub struct VolumeFillComponent {
 	pub volume: Volume,
-	pub render: Box<RenderFn>,
+	pub fill: Box<FillFn>,
 }
 
-pub type RenderFn = dyn Fn(Volume) -> Vec<Fill> + Send + Sync;
+pub type FillFn = dyn Fn(Volume) -> Vec<Fill> + Send + Sync;
+
+#[derive(Component)]
+pub struct EphemeralFill;
