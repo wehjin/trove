@@ -8,5 +8,5 @@ pub struct ViewComponent {
 }
 
 #[derive(Component)]
-pub struct RootView;
+pub struct RootViewMarker;
 

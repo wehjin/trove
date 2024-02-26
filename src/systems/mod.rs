@@ -1,13 +1,13 @@
-use bevy::prelude::{Bundle, Changed, Commands, Component, default, Entity, Query, Res, Transform};
+use bevy::prelude::{Bundle, Changed, Commands, Component, default, Entity, Query, Res, ResMut, Transform};
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 
+use crate::{RootViewModelBuilder, SampleAppSettings, ViewModelBuilding};
 use crate::components::fill::Fill;
 use crate::components::setup::AppAssets;
-use crate::components::view::{RootView, ViewComponent};
-use crate::tools::{Painter, Shaper, ShapeResult, ShapePaint};
+use crate::components::view::{RootViewMarker, ViewComponent};
+use crate::tools::{Painter, ShapePaint, Shaper, ShapeResult};
 use crate::tools::console::Console;
 use crate::tools::fill::Glyph;
-use crate::tools::sample::SampleApp;
 use crate::tools::zrect::ZRect;
 
 pub mod console;
@@ -44,9 +44,10 @@ struct ViewBundle {
 	mesh_outputs: MeshOutputs,
 }
 
-pub fn add_root_view(console: Res<Console>, mut commands: Commands) {
+pub fn add_root_view(console: Res<Console>, mut builder: ResMut<RootViewModelBuilder<SampleAppSettings>>, mut commands: Commands) {
+	let builder = builder.value.take().expect("no ViewModelBuilder");
+	let model = Box::new(builder.into_view_model());
 	let (cols, rows) = console.width_height();
-	let model = Box::new(SampleApp {});
 	let shaper_inputs = ShaperInputs {
 		shaper: Some(model.to_shaper()),
 		edge_zrect: Some(ZRect::from_cols_rows_z(cols, rows, 1)),
@@ -55,7 +56,7 @@ pub fn add_root_view(console: Res<Console>, mut commands: Commands) {
 	let mesh_inputs = MeshInputs { fills: Vec::new(), max_row: rows };
 	let mesh_outputs = MeshOutputs::default();
 	let view = ViewComponent { model };
-	commands.spawn((RootView, ViewBundle { view, shaper_inputs, painter_inputs, mesh_inputs, mesh_outputs }));
+	commands.spawn((RootViewMarker, ViewBundle { view, shaper_inputs, painter_inputs, mesh_inputs, mesh_outputs }));
 }
 
 pub fn apply_shapers_update_painters(mut query: Query<(&mut ShaperInputs, &mut PainterInputs), Changed<ShaperInputs>>) {
