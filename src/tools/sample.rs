@@ -28,21 +28,17 @@ struct MyShaper {
 
 impl Shaper for MyShaper {
 	fn shape(&mut self, edge_zrect: ZRect) -> ShapingResult {
+		let edge_zrect = edge_zrect.inset(Inset::DoubleCols(1)).move_closer(1);
 		if self.edge_zrect == Some(edge_zrect) {
 			ShapingResult::NoChange
 		} else {
-			if self.edge_zrect == Some(edge_zrect) {
-				ShapingResult::NoChange
-			} else {
-				let inset_zrect = edge_zrect.inset(Inset::DoubleCols(1)).move_closer(1);
-				let (head_volume, body_volume) = inset_zrect.split_from_top(1);
-				let painters: Vec<BoxRender> = vec![
-					Box::new(TitleRender(head_volume)),
-					Box::new(BodyRender(body_volume)),
-				];
-				self.edge_zrect = Some(edge_zrect);
-				ShapingResult::SetPainters(painters)
-			}
+			let (head_volume, body_volume) = edge_zrect.split_from_top(1);
+			let painters: Vec<BoxRender> = vec![
+				Box::new(TitleRender(head_volume)),
+				Box::new(BodyRender(body_volume)),
+			];
+			self.edge_zrect = Some(edge_zrect);
+			ShapingResult::SetPainters(painters)
 		}
 	}
 }
