@@ -1,6 +1,6 @@
 use crate::tools::inset::Inset;
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Eq, PartialEq, Default)]
 pub struct ZRect {
 	pub left: i16,
 	pub right: i16,
@@ -10,8 +10,8 @@ pub struct ZRect {
 }
 
 impl ZRect {
-	pub fn from_cols_rows_near(cols: u16, rows: u16, near: i16) -> Self {
-		Self { left: 0, top: 0, right: cols as i16, bottom: rows as i16, z: near }
+	pub fn from_cols_rows_z(cols: u16, rows: u16, z: i16) -> Self {
+		Self { left: 0, top: 0, right: cols as i16, bottom: rows as i16, z }
 	}
 	pub fn inset(mut self, inset: Inset) -> Self {
 		let (t, r, b, l) = inset.to_top_right_bottom_left();

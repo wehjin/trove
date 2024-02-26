@@ -1,24 +1,27 @@
 use crate::components::fill::Fill;
-use crate::tools::volume::ZRect;
+use crate::tools::zrect::ZRect;
 
 pub mod console;
 pub mod fill;
 pub mod inset;
-pub mod layouts;
-pub mod renders;
 pub mod sample;
-pub mod volume;
+pub mod zrect;
 
-pub trait ViewModel<ViewMsg> {
-	fn to_layout(&self) -> Box<dyn Layout + Send + Sync>;
+pub trait ShapePaint {
+	fn to_shaper(&self) -> Box<dyn Shaper + Send + Sync>;
 }
 
-pub trait Layout {
-	fn run_layout(&self, volume: ZRect) -> Vec<Box<dyn Render + Send + Sync>>;
+pub enum ShapeResult {
+	NoChange,
+	NewPainters(Vec<Box<dyn Painter + Send + Sync>>),
 }
 
-pub trait Render {
-	fn run_render(&self) -> Vec<Fill>;
+pub trait Shaper {
+	fn shape(&mut self, edge_zrect: ZRect) -> ShapeResult;
 }
 
-pub type RenderBox = Box<dyn Render + Send + Sync>;
+pub trait Painter {
+	fn paint(&self) -> Vec<Fill>;
+}
+
+pub type BoxRender = Box<dyn Painter + Send + Sync>;

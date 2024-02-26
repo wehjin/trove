@@ -1,12 +1,9 @@
 use bevy::prelude::Component;
 
 use crate::tools::fill::Glyph;
-use crate::tools::volume::ZRect;
+use crate::tools::zrect::ZRect;
 
-#[derive(Component)]
-pub struct FillMadeMesh;
-
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Eq, PartialEq)]
 pub struct Fill {
 	pub glyph: Glyph,
 	pub volume: ZRect,

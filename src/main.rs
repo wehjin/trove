@@ -5,20 +5,16 @@ use bevy::prelude::{App, IntoSystemConfigs, Startup, Update};
 
 use systems::add_circles;
 use systems::console::{add_console, add_panels, flush_console, greet_panels, hello_world};
-use systems::fill::{despawn_fill_meshes, spawn_fill_meshes};
-use systems::layout::{despawn_layout_renderers, spawn_root_layout_renderers};
-use systems::render::{despawn_renderer_fills, spawn_renderer_fills};
 use systems::setup::{add_app_assets, setup_camera};
-use systems::view::{despawn_view_layouts, spawn_root_view_layouts};
 use tools::console::Console;
 
 use crate::resources::solar_dark;
-use crate::systems::add_root_view;
+use crate::systems::{add_root_view, apply_fills_update_meshes, apply_painters_update_fills, apply_shapers_update_painters};
 
-mod components;
-mod resources;
-mod systems;
-mod tools;
+pub mod components;
+pub mod resources;
+pub mod systems;
+pub mod tools;
 
 fn main() -> Result<(), Box<dyn Error>> {
 	Console::start()?;
@@ -30,19 +26,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 		.add_systems(Startup, setup_camera.after(add_console))
 		.add_systems(Startup, add_panels.after(add_console))
 		.add_systems(Startup, add_circles.after(add_console).after(add_app_assets))
-		.add_systems(Startup, add_root_view)
+		.add_systems(Startup, add_root_view.after(add_console))
 
 		.add_systems(Update, flush_console)
 		.add_systems(Update, hello_world.before(flush_console))
 		.add_systems(Update, greet_panels.after(hello_world).before(flush_console))
-		.add_systems(Update, despawn_fill_meshes)
-		.add_systems(Update, despawn_renderer_fills.after(despawn_fill_meshes))
-		.add_systems(Update, despawn_layout_renderers.after(despawn_renderer_fills))
-		.add_systems(Update, despawn_view_layouts.after(despawn_layout_renderers))
-		.add_systems(Update, spawn_root_view_layouts::<()>.after(despawn_view_layouts))
-		.add_systems(Update, spawn_root_layout_renderers.after(spawn_root_view_layouts::<()>))
-		.add_systems(Update, spawn_renderer_fills.after(spawn_root_layout_renderers))
-		.add_systems(Update, spawn_fill_meshes.after(spawn_renderer_fills))
+		.add_systems(Update, apply_shapers_update_painters)
+		.add_systems(Update, apply_painters_update_fills.after(apply_shapers_update_painters))
+		.add_systems(Update, apply_fills_update_meshes.after(apply_painters_update_fills))
 		.run();
 	Console::stop()?;
 	Ok(())

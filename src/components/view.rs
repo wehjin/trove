@@ -1,13 +1,10 @@
 use bevy::prelude::Component;
 
-use crate::tools::ViewModel;
+use crate::tools::ShapePaint;
 
 #[derive(Component)]
-pub struct ViewMadeLayout;
-
-#[derive(Component)]
-pub struct View<Msg> {
-	pub model: Box<dyn ViewModel<Msg> + Send + Sync>,
+pub struct ViewComponent {
+	pub model: Box<dyn ShapePaint + Send + Sync>,
 }
 
 #[derive(Component)]
