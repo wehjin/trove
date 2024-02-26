@@ -5,6 +5,7 @@ use crate::tools::zrect::ZRect;
 pub mod console;
 pub mod fill;
 pub mod inset;
+pub mod painters;
 pub mod sample;
 pub mod zrect;
 

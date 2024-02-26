@@ -4,6 +4,7 @@ use crate::systems::ViewEffects;
 use crate::tools::{BoxRender, Painter, Shaper, ShapingResult, ViewUpdating};
 use crate::tools::fill::{Glyph, string_to_fills};
 use crate::tools::inset::Inset;
+use crate::tools::painters::BodyPanelPainter;
 use crate::tools::ViewStarting;
 use crate::tools::zrect::ZRect;
 
@@ -32,37 +33,25 @@ impl Shaper for MyShaper {
 		if self.edge_zrect == Some(edge_zrect) {
 			ShapingResult::NoChange
 		} else {
+			self.edge_zrect = Some(edge_zrect);
 			let (head_volume, body_volume) = edge_zrect.split_from_top(1);
 			let painters: Vec<BoxRender> = vec![
-				Box::new(TitleRender(head_volume)),
-				Box::new(BodyRender(body_volume)),
+				Box::new(TitlePainter(head_volume)),
+				Box::new(BodyPanelPainter(body_volume)),
 			];
-			self.edge_zrect = Some(edge_zrect);
 			ShapingResult::SetPainters(painters)
 		}
 	}
 }
 
-struct TitleRender(ZRect);
+struct TitlePainter(ZRect);
 
-impl Painter for TitleRender {
+impl Painter for TitlePainter {
 	fn paint(&self) -> Vec<Fill> {
 		let mut vec = vec![
 			Fill { glyph: Glyph::Solid(solar_dark::BASE02), volume: self.0 },
 		];
 		vec.extend(string_to_fills("hello world!", self.0, solar_dark::BASE1));
-		vec
-	}
-}
-
-struct BodyRender(ZRect);
-
-impl Painter for BodyRender {
-	fn paint(&self) -> Vec<Fill> {
-		let mut vec = vec![
-			Fill { glyph: Glyph::Solid(solar_dark::BASE03), volume: self.0 },
-		];
-		vec.extend(string_to_fills("rack the dubs, chad!", self.0.clone(), solar_dark::BASE0));
 		vec
 	}
 }
