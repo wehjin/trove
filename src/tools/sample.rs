@@ -1,19 +1,19 @@
 use crate::components::fill::Fill;
 use crate::resources::solar_dark;
 use crate::systems::ViewEffects;
-use crate::tools::{BoxRender, Painter, Shaper, ShapeResult, ViewUpdating};
+use crate::tools::{BoxRender, Painter, Shaper, ShapingResult, ViewUpdating};
 use crate::tools::fill::{Glyph, string_to_fills};
 use crate::tools::inset::Inset;
-use crate::tools::ViewBuilding;
+use crate::tools::ViewStarting;
 use crate::tools::zrect::ZRect;
 
 pub struct SampleAppSettings;
 
 pub struct SampleApp;
 
-impl ViewBuilding for SampleAppSettings {
+impl ViewStarting for SampleAppSettings {
 	type Model = SampleApp;
-	fn init_view(self, effects: &mut ViewEffects) -> Self::Model {
+	fn start_view(self, effects: &mut ViewEffects) -> Self::Model {
 		effects.set_shaper(MyShaper::default());
 		SampleApp
 	}
@@ -27,12 +27,12 @@ struct MyShaper {
 }
 
 impl Shaper for MyShaper {
-	fn shape(&mut self, edge_zrect: ZRect) -> ShapeResult {
+	fn shape(&mut self, edge_zrect: ZRect) -> ShapingResult {
 		if self.edge_zrect == Some(edge_zrect) {
-			ShapeResult::NoChange
+			ShapingResult::NoChange
 		} else {
 			if self.edge_zrect == Some(edge_zrect) {
-				ShapeResult::NoChange
+				ShapingResult::NoChange
 			} else {
 				let inset_zrect = edge_zrect.inset(Inset::DoubleCols(1)).move_closer(1);
 				let (head_volume, body_volume) = inset_zrect.split_from_top(1);
@@ -41,7 +41,7 @@ impl Shaper for MyShaper {
 					Box::new(BodyRender(body_volume)),
 				];
 				self.edge_zrect = Some(edge_zrect);
-				ShapeResult::NewPainters(painters)
+				ShapingResult::SetPainters(painters)
 			}
 		}
 	}

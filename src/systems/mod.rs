@@ -1,11 +1,11 @@
 use bevy::prelude::{Bundle, Changed, Commands, Component, default, Entity, Query, Res, ResMut, Transform};
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 
-use crate::RootViewBuilder;
 use crate::components::fill::Fill;
 use crate::components::setup::AppAssets;
 use crate::components::view::{RootViewMarker, ViewComponent};
-use crate::tools::{Painter, Shaper, ShapeResult, ViewBuilding};
+use crate::RootViewStarter;
+use crate::tools::{Painter, Shaper, ShapingResult, ViewStarting};
 use crate::tools::console::Console;
 use crate::tools::fill::Glyph;
 use crate::tools::sample::SampleAppSettings;
@@ -56,11 +56,10 @@ impl<'a, 'w, 's> ViewEffects<'a, 'w, 's> {
 	}
 }
 
-pub fn add_root_view(console: Res<Console>, mut builder: ResMut<RootViewBuilder<SampleAppSettings>>, mut commands: Commands) {
+pub fn add_root_view(console: Res<Console>, mut starter: ResMut<RootViewStarter<SampleAppSettings>>, mut commands: Commands) {
 	let (cols, rows) = console.width_height();
-	let builder = builder.value.take().expect("no ViewModelBuilder");
 	let mut effects = ViewEffects { commands: &mut commands, shaper: None };
-	let model = builder.init_view(&mut effects);
+	let model = starter.value.take().expect("root view starter").start_view(&mut effects);
 	let shaper_inputs = ShaperInputs {
 		shaper: effects.shaper,
 		edge_zrect: Some(ZRect::from_cols_rows_z(cols, rows, 1)),
@@ -78,8 +77,8 @@ pub fn apply_shapers_update_painters(mut query: Query<(&mut ShaperInputs, &mut P
 		if let (Some(shaper), Some(edge_zrect)) = (&mut shaper_inputs.shaper, &edge_rect) {
 			let result = shaper.shape(*edge_zrect);
 			match result {
-				ShapeResult::NoChange => (),
-				ShapeResult::NewPainters(painters) => {
+				ShapingResult::NoChange => (),
+				ShapingResult::SetPainters(painters) => {
 					painter_inputs.painters = painters;
 				}
 			}

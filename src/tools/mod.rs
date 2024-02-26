@@ -8,21 +8,21 @@ pub mod inset;
 pub mod sample;
 pub mod zrect;
 
-pub trait ViewBuilding {
+pub trait ViewStarting {
 	type Model: ViewUpdating;
 
-	fn init_view(self, commands: &mut ViewEffects) -> Self::Model;
+	fn start_view(self, commands: &mut ViewEffects) -> Self::Model;
 }
 
 pub trait ViewUpdating {}
 
-pub enum ShapeResult {
+pub enum ShapingResult {
 	NoChange,
-	NewPainters(Vec<Box<dyn Painter + Send + Sync>>),
+	SetPainters(Vec<Box<dyn Painter + Send + Sync>>),
 }
 
 pub trait Shaper {
-	fn shape(&mut self, edge_zrect: ZRect) -> ShapeResult;
+	fn shape(&mut self, edge_zrect: ZRect) -> ShapingResult;
 }
 
 pub trait Painter {

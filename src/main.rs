@@ -8,7 +8,7 @@ use systems::console::{add_console, add_panels, flush_console, greet_panels, hel
 use systems::setup::{add_app_assets, setup_camera};
 use tools::console::Console;
 use tools::sample::SampleAppSettings;
-use tools::ViewBuilding;
+use tools::ViewStarting;
 
 use crate::resources::solar_dark;
 use crate::systems::{add_root_view, apply_fills_update_meshes, apply_painters_update_fills, apply_shapers_update_painters};
@@ -19,7 +19,7 @@ pub mod systems;
 pub mod tools;
 
 #[derive(Resource)]
-pub struct RootViewBuilder<T: ViewBuilding> {
+pub struct RootViewStarter<T: ViewStarting> {
 	pub value: Option<T>,
 }
 
@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	App::new()
 		.add_plugins(DefaultPlugins)
 		.insert_resource(solar_dark::PALETTE16)
-		.insert_resource(RootViewBuilder { value: Some(SampleAppSettings) })
+		.insert_resource(RootViewStarter { value: Some(SampleAppSettings) })
 		.add_systems(Startup, add_console)
 		.add_systems(Startup, add_app_assets)
 		.add_systems(Startup, setup_camera.after(add_console))
