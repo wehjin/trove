@@ -17,23 +17,23 @@ pub mod resources;
 pub mod systems;
 pub mod tools;
 
-pub trait ViewModelBuilding {
+pub trait ViewBuilding {
 	type Model;
 
-	fn into_view_model(self) -> Self::Model;
+	fn into_model(self) -> Self::Model;
 }
 
 pub struct SampleAppSettings;
 
-impl ViewModelBuilding for SampleAppSettings {
+impl ViewBuilding for SampleAppSettings {
 	type Model = SampleApp;
-	fn into_view_model(self) -> Self::Model {
+	fn into_model(self) -> Self::Model {
 		SampleApp
 	}
 }
 
 #[derive(Resource)]
-pub struct RootViewModelBuilder<T: ViewModelBuilding> {
+pub struct RootViewBuilder<T: ViewBuilding> {
 	pub value: Option<T>,
 }
 
@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	App::new()
 		.add_plugins(DefaultPlugins)
 		.insert_resource(solar_dark::PALETTE16)
-		.insert_resource(RootViewModelBuilder { value: Some(SampleAppSettings) })
+		.insert_resource(RootViewBuilder { value: Some(SampleAppSettings) })
 		.add_systems(Startup, add_console)
 		.add_systems(Startup, add_app_assets)
 		.add_systems(Startup, setup_camera.after(add_console))

@@ -1,7 +1,7 @@
 use bevy::prelude::{Bundle, Changed, Commands, Component, default, Entity, Query, Res, ResMut, Transform};
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 
-use crate::{RootViewModelBuilder, SampleAppSettings, ViewModelBuilding};
+use crate::{RootViewBuilder, SampleAppSettings, ViewBuilding};
 use crate::components::fill::Fill;
 use crate::components::setup::AppAssets;
 use crate::components::view::{RootViewMarker, ViewComponent};
@@ -44,9 +44,9 @@ struct ViewBundle {
 	mesh_outputs: MeshOutputs,
 }
 
-pub fn add_root_view(console: Res<Console>, mut builder: ResMut<RootViewModelBuilder<SampleAppSettings>>, mut commands: Commands) {
+pub fn add_root_view(console: Res<Console>, mut builder: ResMut<RootViewBuilder<SampleAppSettings>>, mut commands: Commands) {
 	let builder = builder.value.take().expect("no ViewModelBuilder");
-	let model = Box::new(builder.into_view_model());
+	let model = Box::new(builder.into_model());
 	let (cols, rows) = console.width_height();
 	let shaper_inputs = ShaperInputs {
 		shaper: Some(model.to_shaper()),
