@@ -1,10 +1,10 @@
 use bevy::prelude::Component;
 
-use crate::tools::ShapePaint;
+use crate::tools::ViewUpdating;
 
 #[derive(Component)]
 pub struct ViewComponent {
-	pub model: Box<dyn ShapePaint + Send + Sync>,
+	pub model: Box<dyn ViewUpdating + Send + Sync>,
 }
 
 #[derive(Component)]

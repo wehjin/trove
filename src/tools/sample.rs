@@ -1,17 +1,25 @@
 use crate::components::fill::Fill;
 use crate::resources::solar_dark;
-use crate::tools::{BoxRender, Painter, ShapePaint, Shaper, ShapeResult};
+use crate::systems::ViewEffects;
+use crate::tools::{BoxRender, Painter, Shaper, ShapeResult, ViewUpdating};
 use crate::tools::fill::{Glyph, string_to_fills};
 use crate::tools::inset::Inset;
+use crate::tools::ViewBuilding;
 use crate::tools::zrect::ZRect;
+
+pub struct SampleAppSettings;
 
 pub struct SampleApp;
 
-impl ShapePaint for SampleApp {
-	fn to_shaper(&self) -> Box<dyn Shaper + Send + Sync> {
-		Box::new(MyShaper::default())
+impl ViewBuilding for SampleAppSettings {
+	type Model = SampleApp;
+	fn init_view(self, effects: &mut ViewEffects) -> Self::Model {
+		effects.set_shaper(MyShaper::default());
+		SampleApp
 	}
 }
+
+impl ViewUpdating for SampleApp {}
 
 #[derive(Default)]
 struct MyShaper {

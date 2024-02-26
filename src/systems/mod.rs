@@ -1,13 +1,14 @@
 use bevy::prelude::{Bundle, Changed, Commands, Component, default, Entity, Query, Res, ResMut, Transform};
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 
-use crate::{RootViewBuilder, SampleAppSettings, ViewBuilding};
+use crate::RootViewBuilder;
 use crate::components::fill::Fill;
 use crate::components::setup::AppAssets;
 use crate::components::view::{RootViewMarker, ViewComponent};
-use crate::tools::{Painter, ShapePaint, Shaper, ShapeResult};
+use crate::tools::{Painter, Shaper, ShapeResult, ViewBuilding};
 use crate::tools::console::Console;
 use crate::tools::fill::Glyph;
+use crate::tools::sample::SampleAppSettings;
 use crate::tools::zrect::ZRect;
 
 pub mod console;
@@ -44,18 +45,30 @@ struct ViewBundle {
 	mesh_outputs: MeshOutputs,
 }
 
+pub struct ViewEffects<'a, 'w, 's> {
+	pub commands: &'a mut Commands<'w, 's>,
+	pub shaper: Option<Box<dyn Shaper + Send + Sync>>,
+}
+
+impl<'a, 'w, 's> ViewEffects<'a, 'w, 's> {
+	pub fn set_shaper(&mut self, shaper: impl Shaper + Send + Sync + 'static) {
+		self.shaper = Some(Box::new(shaper));
+	}
+}
+
 pub fn add_root_view(console: Res<Console>, mut builder: ResMut<RootViewBuilder<SampleAppSettings>>, mut commands: Commands) {
-	let builder = builder.value.take().expect("no ViewModelBuilder");
-	let model = Box::new(builder.into_model());
 	let (cols, rows) = console.width_height();
+	let builder = builder.value.take().expect("no ViewModelBuilder");
+	let mut effects = ViewEffects { commands: &mut commands, shaper: None };
+	let model = builder.init_view(&mut effects);
 	let shaper_inputs = ShaperInputs {
-		shaper: Some(model.to_shaper()),
+		shaper: effects.shaper,
 		edge_zrect: Some(ZRect::from_cols_rows_z(cols, rows, 1)),
 	};
 	let painter_inputs = PainterInputs { painters: Vec::new() };
 	let mesh_inputs = MeshInputs { fills: Vec::new(), max_row: rows };
 	let mesh_outputs = MeshOutputs::default();
-	let view = ViewComponent { model };
+	let view = ViewComponent { model: Box::new(model) };
 	commands.spawn((RootViewMarker, ViewBundle { view, shaper_inputs, painter_inputs, mesh_inputs, mesh_outputs }));
 }
 

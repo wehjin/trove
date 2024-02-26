@@ -7,30 +7,16 @@ use systems::add_circles;
 use systems::console::{add_console, add_panels, flush_console, greet_panels, hello_world};
 use systems::setup::{add_app_assets, setup_camera};
 use tools::console::Console;
+use tools::sample::SampleAppSettings;
+use tools::ViewBuilding;
 
 use crate::resources::solar_dark;
 use crate::systems::{add_root_view, apply_fills_update_meshes, apply_painters_update_fills, apply_shapers_update_painters};
-use crate::tools::sample::SampleApp;
 
 pub mod components;
 pub mod resources;
 pub mod systems;
 pub mod tools;
-
-pub trait ViewBuilding {
-	type Model;
-
-	fn into_model(self) -> Self::Model;
-}
-
-pub struct SampleAppSettings;
-
-impl ViewBuilding for SampleAppSettings {
-	type Model = SampleApp;
-	fn into_model(self) -> Self::Model {
-		SampleApp
-	}
-}
 
 #[derive(Resource)]
 pub struct RootViewBuilder<T: ViewBuilding> {

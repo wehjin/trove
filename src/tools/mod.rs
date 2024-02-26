@@ -1,4 +1,5 @@
 use crate::components::fill::Fill;
+use crate::systems::ViewEffects;
 use crate::tools::zrect::ZRect;
 
 pub mod console;
@@ -7,9 +8,13 @@ pub mod inset;
 pub mod sample;
 pub mod zrect;
 
-pub trait ShapePaint {
-	fn to_shaper(&self) -> Box<dyn Shaper + Send + Sync>;
+pub trait ViewBuilding {
+	type Model: ViewUpdating;
+
+	fn init_view(self, commands: &mut ViewEffects) -> Self::Model;
 }
+
+pub trait ViewUpdating {}
 
 pub enum ShapeResult {
 	NoChange,
