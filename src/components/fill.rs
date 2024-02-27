@@ -1,12 +1,12 @@
 use bevy::prelude::Component;
 
 use crate::tools::fill::Glyph;
-use crate::tools::zrect::ZRect;
+use crate::tools::frame::Frame;
 
 #[derive(Component, Clone, Eq, PartialEq)]
 pub struct Fill {
 	pub glyph: Glyph,
-	pub volume: ZRect,
+	pub volume: Frame,
 }
 
 impl Fill {

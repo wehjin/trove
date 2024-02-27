@@ -1,10 +1,10 @@
 use crate::resources::solar_dark;
 use crate::systems::ViewEffects;
-use crate::tools::{BoxRender, Shaper, ShapingResult, ViewUpdating};
+use crate::tools::{BoxPainter, Shaper, ShaperEffects, ShaperMsg, ViewUpdating};
 use crate::tools::inset::Inset;
 use crate::tools::painters::{BodyPanelPainter, ButtonPainter, ColorIndex, StringPainter, TitlePainter};
 use crate::tools::ViewStarting;
-use crate::tools::zrect::ZRect;
+use crate::tools::frame::Frame;
 
 pub struct SampleAppSettings;
 
@@ -22,37 +22,28 @@ impl ViewUpdating for SampleApp {}
 
 #[derive(Default)]
 struct MyShaper {
-	edge_zrect: Option<ZRect>,
+	edge_frame: Option<Frame>,
 }
 
 impl Shaper for MyShaper {
-	fn shape(&mut self, edge_zrect: ZRect) -> ShapingResult {
-		let edge_zrect = edge_zrect.inset(Inset::DoubleCols(1)).move_closer(1);
-		if self.edge_zrect == Some(edge_zrect) {
-			ShapingResult::NoChange
-		} else {
-			self.edge_zrect = Some(edge_zrect);
-			let (head_zrect, body_zrect) = edge_zrect.split_from_top(1);
-			let message = "Empty in assets".to_string();
-			let message_zrect = body_zrect.into_single_row_fixed_width_centered(message.chars().count() as u16).move_closer(1);
-			let button = "{+}".to_string();
-			let button_zrect = body_zrect.into_single_row_fixed_width_at_offset_from_bottom_right(button.chars().count() as u16, 2, 1);
-			let painters: Vec<BoxRender> = vec![
-				Box::new(TitlePainter(head_zrect)),
-				Box::new(BodyPanelPainter(body_zrect)),
-				Box::new(StringPainter {
-					zrect: message_zrect,
-					string: message,
-					string_color: ColorIndex(solar_dark::BASE01),
-				}),
-				Box::new(ButtonPainter {
-					zrect: button_zrect,
-					label: button,
-					label_color: ColorIndex(solar_dark::BASE01),
-					base_color: ColorIndex(solar_dark::BASE3),
-				}),
-			];
-			ShapingResult::SetPainters(painters)
+	fn shape(&mut self, msg: ShaperMsg, effects: &mut ShaperEffects) {
+		let ShaperMsg::SetEdge(edge_zrect) = msg;
+		let edge_frame = edge_zrect.inset(Inset::DoubleCols(1)).move_closer(1);
+		if self.edge_frame == Some(edge_frame) {
+			return;
 		}
+		self.edge_frame = Some(edge_frame);
+		const EMPTY_TEXT: &str = "Empty in assets";
+		const BUTTON_LABEL: &str = "{+}";
+		let (title_frame, body_frame) = edge_frame.split_from_top(1);
+		let text_frame = body_frame.into_single_row_fixed_width_centered(EMPTY_TEXT.chars().count() as u16).move_closer(1);
+		let button_frame = body_frame.into_single_row_fixed_width_at_offset_from_bottom_right(BUTTON_LABEL.chars().count() as u16, 2, 1).move_closer(1);
+		let painters: Vec<BoxPainter> = vec![
+			Box::new(TitlePainter(title_frame)),
+			Box::new(BodyPanelPainter(body_frame)),
+			Box::new(StringPainter { frame: text_frame, text: EMPTY_TEXT.to_string(), text_color: ColorIndex(solar_dark::BASE01) }),
+			Box::new(ButtonPainter { frame: button_frame, label: BUTTON_LABEL.to_string(), label_color: ColorIndex(solar_dark::BASE01), base_color: ColorIndex(solar_dark::BASE3) }),
+		];
+		effects.set_painters(painters);
 	}
 }

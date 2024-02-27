@@ -1,33 +1,45 @@
 use crate::components::fill::Fill;
-use crate::systems::ViewEffects;
-use crate::tools::zrect::ZRect;
+use crate::systems::{ViewEffects};
+use crate::tools::frame::Frame;
 
 pub mod console;
 pub mod fill;
+pub mod frame;
 pub mod inset;
 pub mod painters;
 pub mod sample;
-pub mod zrect;
+pub mod views;
 
 pub trait ViewStarting {
 	type Model: ViewUpdating;
 
-	fn start_view(self, commands: &mut ViewEffects) -> Self::Model;
+	fn start_view(self, effects: &mut ViewEffects) -> Self::Model;
 }
 
 pub trait ViewUpdating {}
 
-pub enum ShapingResult {
-	NoChange,
-	SetPainters(Vec<Box<dyn Painter + Send + Sync>>),
+pub trait Shaper {
+	fn shape(&mut self, msg: ShaperMsg, effects: &mut ShaperEffects);
 }
 
-pub trait Shaper {
-	fn shape(&mut self, edge_zrect: ZRect) -> ShapingResult;
+pub enum ShaperMsg {
+	SetEdge(Frame)
+}
+
+#[derive(Default)]
+pub struct ShaperEffects {
+	pub new_painters: Option<Vec<BoxPainter>>,
+}
+
+impl ShaperEffects {
+	pub fn set_painters(&mut self, painters: Vec<BoxPainter>) {
+		self.new_painters = Some(painters);
+	}
 }
 
 pub trait Painter {
 	fn paint(&self) -> Vec<Fill>;
 }
 
-pub type BoxRender = Box<dyn Painter + Send + Sync>;
+
+pub type BoxPainter = Box<dyn Painter + Send + Sync>;

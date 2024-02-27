@@ -5,11 +5,11 @@ use crate::components::fill::Fill;
 use crate::components::setup::AppAssets;
 use crate::components::view::{RootViewMarker, ViewComponent};
 use crate::RootViewStarter;
-use crate::tools::{Painter, Shaper, ShapingResult, ViewStarting};
+use crate::tools::{Painter, Shaper, ShaperEffects, ShaperMsg, ViewStarting};
 use crate::tools::console::Console;
 use crate::tools::fill::Glyph;
+use crate::tools::frame::Frame;
 use crate::tools::sample::SampleAppSettings;
-use crate::tools::zrect::ZRect;
 
 pub mod console;
 pub mod setup;
@@ -17,7 +17,7 @@ pub mod setup;
 #[derive(Component, Default)]
 pub struct ShaperInputs {
 	shaper: Option<Box<dyn Shaper + Send + Sync>>,
-	edge_zrect: Option<ZRect>,
+	edge_frame: Option<Frame>,
 }
 
 #[derive(Component, Default)]
@@ -62,7 +62,7 @@ pub fn add_root_view(console: Res<Console>, mut starter: ResMut<RootViewStarter<
 	let model = starter.value.take().expect("root view starter").start_view(&mut effects);
 	let shaper_inputs = ShaperInputs {
 		shaper: effects.shaper,
-		edge_zrect: Some(ZRect::from_cols_rows_z(cols, rows, 1)),
+		edge_frame: Some(Frame::from_cols_rows_z(cols, rows, 1)),
 	};
 	let painter_inputs = PainterInputs { painters: Vec::new() };
 	let mesh_inputs = MeshInputs { fills: Vec::new(), max_row: rows };
@@ -73,17 +73,13 @@ pub fn add_root_view(console: Res<Console>, mut starter: ResMut<RootViewStarter<
 
 pub fn apply_shapers_update_painters(mut query: Query<(&mut ShaperInputs, &mut PainterInputs), Changed<ShaperInputs>>) {
 	for (mut shaper_inputs, mut painter_inputs) in query.iter_mut() {
-		let edge_rect = shaper_inputs.edge_zrect;
-		if let (Some(shaper), Some(edge_zrect)) = (&mut shaper_inputs.shaper, &edge_rect) {
-			let result = shaper.shape(*edge_zrect);
-			match result {
-				ShapingResult::NoChange => (),
-				ShapingResult::SetPainters(painters) => {
-					painter_inputs.painters = painters;
-				}
+		let shaper_inputs_edge_frame = shaper_inputs.edge_frame;
+		if let (Some(shaper), Some(edge_frame)) = (&mut shaper_inputs.shaper, &shaper_inputs_edge_frame) {
+			let mut effects = ShaperEffects::default();
+			shaper.shape(ShaperMsg::SetEdge(*edge_frame), &mut effects);
+			if let Some(painters) = effects.new_painters {
+				painter_inputs.painters = painters;
 			}
-		} else {
-			painter_inputs.painters.clear();
 		}
 	}
 }
