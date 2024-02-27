@@ -21,16 +21,32 @@ impl ZRect {
 		self.left += l as i16;
 		self
 	}
-
 	pub fn split_from_top(mut self, rows: u16) -> (ZRect, ZRect) {
 		let split = self.top + rows as i16;
 		let bottom = ZRect { top: split, ..self.clone() };
 		self.bottom = split;
 		(self, bottom)
 	}
-	pub fn move_closer(mut self, layers: u16) -> Self {
-		self.z += layers as i16;
+	pub fn into_single_row_fixed_width_centered(self, width: u16) -> ZRect {
+		let width = width as i16;
+		let left = self.left + (self.width() - width) / 2;
+		let top = self.top + (self.bottom - self.top) / 2 - 1;
+		ZRect { left, right: left + width, top, bottom: top + 1, z: self.z }
+	}
+	pub fn into_single_row_fixed_width_at_offset_from_bottom_right(self, width: u16, right_offset: u16, bottom_offset: u16) -> ZRect {
+		let right = self.right - (right_offset as i16);
+		let left = right - (width as i16);
+		let bottom = self.bottom - (bottom_offset as i16);
+		let top = bottom - 1;
+		ZRect { left, right, top, bottom, z: self.z }
+	}
+	pub fn move_down(mut self, rows: u16) -> Self {
+		self.top += rows as i16;
+		self.bottom += rows as i16;
 		self
+	}
+	pub fn move_closer(self, layers: u16) -> Self {
+		Self { z: self.z + layers as i16, ..self }
 	}
 	pub fn move_right(mut self, cols: u16) -> Self {
 		self.right += cols as i16;

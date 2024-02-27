@@ -1,15 +1,15 @@
 use crate::components::fill::Fill;
 use crate::tools::zrect::ZRect;
 
-pub fn string_to_fills(string: &str, string_volume: ZRect, color_index: usize) -> Vec<Fill> {
-	let mut fill_volume = string_volume.with_width_from_left(1).with_height_from_top(1);
+pub fn string_to_fills(string: &str, zrect: ZRect, color_index: usize) -> Vec<Fill> {
+	let mut fill_zrect = zrect.with_width_from_left(1).with_height_from_top(1);
 	let mut vec = Vec::new();
 	for i in 0..string.chars().count() {
 		if !&string[i..i + 1].trim().is_empty() {
-			let fill = Fill { glyph: Glyph::Text(color_index), volume: fill_volume.clone() };
+			let fill = Fill { glyph: Glyph::Text(color_index), volume: fill_zrect.clone() };
 			vec.push(fill);
 		}
-		fill_volume = fill_volume.move_right(1);
+		fill_zrect = fill_zrect.move_right(1);
 	}
 	vec
 }
