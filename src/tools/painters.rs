@@ -33,8 +33,10 @@ pub struct ButtonPainter {
 
 impl Painter for ButtonPainter {
 	fn paint(&self) -> Vec<Fill> {
-		let fills1 = string_to_fills(&self.label, self.frame.move_closer(1), self.label_color.0);
-		let fills2 = vec![Fill { glyph: Glyph::Solid(self.base_color.0), volume: self.frame }];
+		let frame = self.frame
+			.into_single_row_fixed_width_centered(self.label.chars().count() as u16);
+		let fills1 = string_to_fills(&self.label, frame.move_closer(1), self.label_color.0);
+		let fills2 = vec![Fill { glyph: Glyph::Solid(self.base_color.0), volume: frame }];
 		vec![fills1, fills2].into_iter().flatten().collect()
 	}
 }

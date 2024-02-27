@@ -2,17 +2,9 @@ use std::error::Error;
 use std::io::{stdout, Write};
 
 use bevy::prelude::Resource;
-use crossterm::{execute, queue, terminal};
+use crossterm::{queue, terminal};
 use crossterm::cursor::MoveTo;
 use crossterm::style::{Color, Print, SetBackgroundColor, SetForegroundColor};
-use crossterm::terminal::Clear;
-use crossterm::terminal::ClearType;
-use crossterm::terminal::disable_raw_mode;
-use crossterm::terminal::DisableLineWrap;
-use crossterm::terminal::enable_raw_mode;
-use crossterm::terminal::EnableLineWrap;
-use crossterm::terminal::EnterAlternateScreen;
-use crossterm::terminal::LeaveAlternateScreen;
 
 use crate::components::console::Position;
 
@@ -67,24 +59,27 @@ impl Console {
 		).expect("execute");
 	}
 	pub fn start() -> Result<Self, Box<dyn Error>> {
-		enable_raw_mode()?;
-		execute!(
-			stdout(),
-			EnterAlternateScreen,
-			DisableLineWrap,
-			SetBackgroundColor(Color::Black),
-			Clear(ClearType::All),
-		)?;
+		// For ow we are using the console only for discovering the size
+		// and do not need to change modes.
+		//
+		// enable_raw_mode()?;
+		// execute!(
+		// 	stdout(),
+		// 	EnterAlternateScreen,
+		// 	DisableLineWrap,
+		// 	SetBackgroundColor(Color::Black),
+		// 	Clear(ClearType::All),
+		// )?;
 		Ok(Self)
 	}
 	pub fn stop() -> Result<(), Box<dyn Error>> {
-		execute!(
-			stdout(),
-			Clear(ClearType::All),
-			LeaveAlternateScreen,
-			EnableLineWrap,
-		)?;
-		disable_raw_mode()?;
+		// execute!(
+		// 	stdout(),
+		// 	Clear(ClearType::All),
+		// 	LeaveAlternateScreen,
+		// 	EnableLineWrap,
+		// )?;
+		//disable_raw_mode()?;
 		Ok(())
 	}
 }

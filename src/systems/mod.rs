@@ -9,7 +9,6 @@ use crate::tools::{Painter, Shaper, ShaperEffects, ShaperMsg, ViewStarting};
 use crate::tools::console::Console;
 use crate::tools::fill::Glyph;
 use crate::tools::frame::Frame;
-use crate::tools::sample::SampleAppSettings;
 
 pub mod console;
 pub mod setup;
@@ -56,7 +55,7 @@ impl<'a, 'w, 's> ViewEffects<'a, 'w, 's> {
 	}
 }
 
-pub fn add_root_view(console: Res<Console>, mut starter: ResMut<RootViewStarter<SampleAppSettings>>, mut commands: Commands) {
+pub fn add_root_view<T: ViewStarting + Send + Sync + 'static>(console: Res<Console>, mut starter: ResMut<RootViewStarter<T>>, mut commands: Commands) {
 	let (cols, rows) = console.width_height();
 	let mut effects = ViewEffects { commands: &mut commands, shaper: None };
 	let model = starter.value.take().expect("root view starter").start_view(&mut effects);

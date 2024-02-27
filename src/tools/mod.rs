@@ -1,5 +1,5 @@
 use crate::components::fill::Fill;
-use crate::systems::{ViewEffects};
+use crate::systems::ViewEffects;
 use crate::tools::frame::Frame;
 
 pub mod console;
@@ -8,10 +8,11 @@ pub mod frame;
 pub mod inset;
 pub mod painters;
 pub mod sample;
+pub mod shapers;
 pub mod views;
 
 pub trait ViewStarting {
-	type Model: ViewUpdating;
+	type Model: ViewUpdating + Send + Sync + 'static;
 
 	fn start_view(self, effects: &mut ViewEffects) -> Self::Model;
 }
