@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::components::fill::Fill;
-use crate::systems::ViewEffects;
+use crate::view_plugin::tools::ViewEffects;
 use crate::tools::frame::Frame;
 
 pub mod console;

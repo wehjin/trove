@@ -1,5 +1,5 @@
 use crate::resources::solar_dark;
-use crate::systems::ViewEffects;
+use crate::view_plugin::tools::ViewEffects;
 use crate::tools::{BoxPainter, Shaper, ShaperEffects, ShaperMsg, ViewUpdating};
 use crate::tools::frame::Frame;
 use crate::tools::inset::Inset;

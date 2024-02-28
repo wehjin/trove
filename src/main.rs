@@ -9,12 +9,13 @@ use systems::setup::{add_app_assets, setup_camera};
 use tools::console::Console;
 use tools::sample::SampleAppSettings;
 use tools::ViewStarting;
+use view_plugin::systems::{add_root_view, update_fills, update_focus_options, update_meshes, update_model_queue, update_models, update_painters_captors, update_user_queue};
 
 use crate::resources::solar_dark;
-use crate::systems::{add_root_view, update_fills, update_focus_options, update_meshes, update_model_queue, update_models, update_painters_captors, update_user_queue};
 use crate::tools::views::{FabInit, FabMsg};
 
 pub mod components;
+pub mod view_plugin;
 pub mod resources;
 pub mod systems;
 pub mod tools;

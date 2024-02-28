@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bevy::utils::default;
 
 use crate::resources::solar_dark;
-use crate::systems::ViewEffects;
+use crate::view_plugin::tools::ViewEffects;
 use crate::tools::{BoxPainter, Captor, Shaper, UserEvent, ViewStarting, ViewUpdating};
 use crate::tools::frame::Frame;
 use crate::tools::painters::{ButtonPainter, ColorIndex};
