@@ -14,27 +14,41 @@ pub mod views;
 pub trait ViewStarting {
 	type Model: ViewUpdating + Send + Sync + 'static;
 
-	fn start_view(self, effects: &mut ViewEffects) -> Self::Model;
+	fn start_view(self, effects: &mut ViewEffects<<Self::Model as ViewUpdating>::Msg>) -> Self::Model;
 }
 
-pub trait ViewUpdating {}
-
-pub trait Shaper {
-	fn shape(&mut self, msg: ShaperMsg, effects: &mut ShaperEffects);
+pub trait ViewUpdating {
+	type Msg: Send + Sync + 'static;
+	fn update_view(&mut self, msg: Self::Msg, effects: &mut ViewEffects<Self::Msg>);
 }
+
+pub trait Shaper<Msg> {
+	fn shape(&mut self, msg: ShaperMsg, effects: &mut ShaperEffects<Msg>);
+}
+
+pub type BoxShaper<Msg> = Box<dyn Shaper<Msg> + Send + Sync>;
 
 pub enum ShaperMsg {
 	SetEdge(Frame)
 }
 
-#[derive(Default)]
-pub struct ShaperEffects {
+pub struct ShaperEffects<Msg> {
 	pub new_painters: Option<Vec<BoxPainter>>,
+	pub new_captor: Option<BoxCaptor<Msg>>,
 }
 
-impl ShaperEffects {
+impl<Msg> Default for ShaperEffects<Msg> {
+	fn default() -> Self {
+		Self { new_painters: None, new_captor: None }
+	}
+}
+
+impl<Msg> ShaperEffects<Msg> {
 	pub fn set_painters(&mut self, painters: Vec<BoxPainter>) {
 		self.new_painters = Some(painters);
+	}
+	pub fn set_captor(&mut self, captor: BoxCaptor<Msg>) {
+		self.new_captor = Some(captor);
 	}
 }
 
@@ -42,5 +56,10 @@ pub trait Painter {
 	fn paint(&self) -> Vec<Fill>;
 }
 
-
 pub type BoxPainter = Box<dyn Painter + Send + Sync>;
+
+pub trait Captor<Msg> {
+	fn to_space_msg(&self, pressed: bool) -> Option<Msg>;
+}
+
+pub type BoxCaptor<Msg> = Box<dyn Captor<Msg> + Send + Sync>;

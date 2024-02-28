@@ -14,7 +14,7 @@ pub fn string_to_fills(string: &str, zrect: Frame, color_index: usize) -> Vec<Fi
 	vec
 }
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Glyph {
 	Solid(usize),
 	Text(usize),

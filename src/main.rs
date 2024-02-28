@@ -11,8 +11,8 @@ use tools::sample::SampleAppSettings;
 use tools::ViewStarting;
 
 use crate::resources::solar_dark;
-use crate::systems::{add_root_view, apply_fills_update_meshes, apply_painters_update_fills, apply_shapers_update_painters};
-use crate::tools::views::FabInit;
+use crate::systems::{add_root_view, keyboard_input, update_fills, update_meshes, update_models, update_painters_captors};
+use crate::tools::views::{FabInit, FabMsg};
 
 pub mod components;
 pub mod resources;
@@ -38,9 +38,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 		.add_systems(Startup, add_panels.after(add_console))
 		.add_systems(Startup, add_circles.after(add_console).after(add_app_assets))
 		.add_systems(Startup, add_root_view::<FabInit>.after(add_console))
-		.add_systems(Update, apply_shapers_update_painters)
-		.add_systems(Update, apply_painters_update_fills.after(apply_shapers_update_painters))
-		.add_systems(Update, apply_fills_update_meshes.after(apply_painters_update_fills))
+		.add_systems(Update, update_models::<FabMsg>)
+		.add_systems(Update, update_painters_captors::<FabMsg>)
+		.add_systems(Update, keyboard_input::<FabMsg>)
+		.add_systems(Update, update_fills)
+		.add_systems(Update, update_meshes.after(update_fills))
 		.run();
 	Console::stop()?;
 	Ok(())

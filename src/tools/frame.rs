@@ -1,6 +1,6 @@
 use crate::tools::inset::Inset;
 
-#[derive(Copy, Clone, Eq, PartialEq, Default)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Default)]
 pub struct Frame {
 	pub left: i16,
 	pub right: i16,

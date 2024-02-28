@@ -1,10 +1,10 @@
 use crate::resources::solar_dark;
 use crate::systems::ViewEffects;
 use crate::tools::{BoxPainter, Shaper, ShaperEffects, ShaperMsg, ViewUpdating};
+use crate::tools::frame::Frame;
 use crate::tools::inset::Inset;
 use crate::tools::painters::{BodyPanelPainter, ButtonPainter, ColorIndex, StringPainter, TitlePainter};
 use crate::tools::ViewStarting;
-use crate::tools::frame::Frame;
 
 pub struct SampleAppSettings;
 
@@ -12,21 +12,24 @@ pub struct SampleApp;
 
 impl ViewStarting for SampleAppSettings {
 	type Model = SampleApp;
-	fn start_view(self, effects: &mut ViewEffects) -> Self::Model {
+	fn start_view(self, effects: &mut ViewEffects<()>) -> Self::Model {
 		effects.set_shaper(MyShaper::default());
 		SampleApp
 	}
 }
 
-impl ViewUpdating for SampleApp {}
+impl ViewUpdating for SampleApp {
+	type Msg = ();
+	fn update_view(&mut self, _msg: Self::Msg, _effects: &mut ViewEffects<()>) {}
+}
 
 #[derive(Default)]
 struct MyShaper {
 	edge_frame: Option<Frame>,
 }
 
-impl Shaper for MyShaper {
-	fn shape(&mut self, msg: ShaperMsg, effects: &mut ShaperEffects) {
+impl Shaper<()> for MyShaper {
+	fn shape(&mut self, msg: ShaperMsg, effects: &mut ShaperEffects<()>) {
 		let ShaperMsg::SetEdge(edge_zrect) = msg;
 		let edge_frame = edge_zrect.inset(Inset::DoubleCols(1)).move_closer(1);
 		if self.edge_frame == Some(edge_frame) {

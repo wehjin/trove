@@ -3,8 +3,9 @@ use bevy::prelude::Component;
 use crate::tools::ViewUpdating;
 
 #[derive(Component)]
-pub struct ViewComponent {
-	pub model: Box<dyn ViewUpdating + Send + Sync>,
+pub struct ModelInputs<Msg> {
+	pub model: Box<dyn ViewUpdating<Msg=Msg> + Send + Sync>,
+	pub msg_queue: Vec<Msg>,
 }
 
 #[derive(Component)]

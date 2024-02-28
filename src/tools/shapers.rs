@@ -1,24 +1,27 @@
-use crate::tools::{BoxPainter, Shaper, ShaperEffects, ShaperMsg};
+use crate::tools::{BoxCaptor, BoxPainter, Shaper, ShaperEffects, ShaperMsg};
 use crate::tools::frame::Frame;
 
-pub struct PainterShaper {
+pub struct EdgeShaper<Msg> {
 	edge_frame: Option<Frame>,
-	painter_builder: Box<dyn Fn(Frame) -> BoxPainter + Send + Sync + 'static>,
+	build_painter: Box<dyn Fn(Frame) -> BoxPainter + Send + Sync + 'static>,
+	build_captor: Box<dyn Fn(Frame) -> BoxCaptor<Msg> + Send + Sync + 'static>,
 }
 
-impl PainterShaper {
-	pub fn new(painter_builder: impl Fn(Frame) -> BoxPainter + Send + Sync + 'static) -> Self {
-		Self { edge_frame: None, painter_builder: Box::new(painter_builder) }
+impl<Msg> EdgeShaper<Msg> {
+	pub fn new(
+		build_painter: impl Fn(Frame) -> BoxPainter + Send + Sync + 'static,
+		build_captor: impl Fn(Frame) -> BoxCaptor<Msg> + Send + Sync + 'static) -> Self {
+		Self { edge_frame: None, build_painter: Box::new(build_painter), build_captor: Box::new(build_captor) }
 	}
 }
 
-impl Shaper for PainterShaper {
-	fn shape(&mut self, msg: ShaperMsg, effects: &mut ShaperEffects) {
+impl<Msg> Shaper<Msg> for EdgeShaper<Msg> {
+	fn shape(&mut self, msg: ShaperMsg, effects: &mut ShaperEffects<Msg>) {
 		match msg {
 			ShaperMsg::SetEdge(edge_frame) => {
 				if self.edge_frame != Some(edge_frame) {
-					let painter = (self.painter_builder)(edge_frame);
-					effects.set_painters(vec![painter])
+					effects.set_painters(vec![(self.build_painter)(edge_frame)]);
+					effects.set_captor((self.build_captor)(edge_frame));
 				}
 			}
 		}

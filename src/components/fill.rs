@@ -3,7 +3,7 @@ use bevy::prelude::Component;
 use crate::tools::fill::Glyph;
 use crate::tools::frame::Frame;
 
-#[derive(Component, Clone, Eq, PartialEq)]
+#[derive(Component, Clone, Eq, PartialEq, Hash)]
 pub struct Fill {
 	pub glyph: Glyph,
 	pub volume: Frame,
