@@ -6,7 +6,7 @@ use std::collections::HashSet;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use crate::components::setup::AppAssets;
 use crate::components::view::{ModelInputs, RootViewMarker};
-use crate::RootViewStarter;
+use crate::view_plugin::tools::RootViewStarter;
 use crate::tools::{ ShaperEffects, ShaperMsg, UserEvent, ViewStarting};
 use crate::tools::console::Console;
 use crate::tools::fill::Glyph;

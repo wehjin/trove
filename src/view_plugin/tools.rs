@@ -1,6 +1,6 @@
-use bevy::prelude::{Bundle, Commands};
+use bevy::prelude::{Bundle, Commands, Resource};
 use crate::components::view::ModelInputs;
-use crate::tools::{BoxShaper, Shaper};
+use crate::tools::{BoxShaper, Shaper, ViewStarting};
 use crate::view_plugin::components::{CaptorInputs, FocusOptions, MeshInputs, MeshOutputs, ModelOutputs, PainterInputs, ShaperInputs, UserEventQueue};
 
 #[derive(Bundle)]
@@ -25,4 +25,9 @@ impl<'a, 'w, 's, Msg> ViewEffects<'a, 'w, 's, Msg> {
 	pub fn set_shaper(&mut self, shaper: impl Shaper<Msg> + Send + Sync + 'static) {
 		self.new_shaper = Some(Box::new(shaper));
 	}
+}
+
+#[derive(Resource)]
+pub struct RootViewStarter<T: ViewStarting + Send + Sync + 'static> {
+	pub value: Option<T>,
 }

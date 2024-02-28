@@ -1,18 +1,17 @@
 use std::error::Error;
 
 use bevy::DefaultPlugins;
-use bevy::prelude::{App, IntoSystemConfigs, Resource, Startup, Update};
+use bevy::prelude::{App, IntoSystemConfigs, Startup};
 
 use systems::add_circles;
 use systems::console::{add_console, add_panels};
-use systems::setup::{add_app_assets, setup_camera};
+use systems::setup::add_app_assets;
 use tools::console::Console;
 use tools::sample::SampleAppSettings;
-use tools::ViewStarting;
-use view_plugin::systems::{add_root_view, update_fills, update_focus_options, update_meshes, update_model_queue, update_models, update_painters_captors, update_user_queue};
+use view_plugin::AlphaPlugin;
+use view_plugin::tools::RootViewStarter;
 
-use crate::resources::solar_dark;
-use crate::tools::views::{FabInit, FabMsg};
+use crate::tools::views::FabInit;
 
 pub mod components;
 pub mod view_plugin;
@@ -20,32 +19,16 @@ pub mod resources;
 pub mod systems;
 pub mod tools;
 
-#[derive(Resource)]
-pub struct RootViewStarter<T: ViewStarting + Send + Sync + 'static> {
-	pub value: Option<T>,
-}
-
 fn main() -> Result<(), Box<dyn Error>> {
 	Console::start()?;
 	let _root_view_starter = RootViewStarter { value: Some(SampleAppSettings) };
 	let root_view_starter = RootViewStarter { value: Some(FabInit::default()) };
 	App::new()
 		.add_plugins(DefaultPlugins)
-		.insert_resource(solar_dark::PALETTE16)
-		.insert_resource(root_view_starter)
-		.add_systems(Startup, add_console)
-		.add_systems(Startup, add_app_assets)
-		.add_systems(Startup, setup_camera.after(add_console))
+		.add_plugins(AlphaPlugin)
 		.add_systems(Startup, add_panels.after(add_console))
 		.add_systems(Startup, add_circles.after(add_console).after(add_app_assets))
-		.add_systems(Startup, add_root_view::<FabInit>.after(add_console))
-		.add_systems(Update, update_model_queue::<FabMsg>)
-		.add_systems(Update, update_models::<FabMsg>)
-		.add_systems(Update, update_painters_captors::<FabMsg>)
-		.add_systems(Update, update_focus_options::<FabMsg>)
-		.add_systems(Update, update_user_queue)
-		.add_systems(Update, update_fills)
-		.add_systems(Update, update_meshes.after(update_fills))
+		.insert_resource(root_view_starter)
 		.run();
 	Console::stop()?;
 	Ok(())
