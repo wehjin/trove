@@ -4,7 +4,7 @@ use bevy::utils::default;
 
 use crate::resources::solar_dark;
 use crate::view_plugin::tools::ViewEffects;
-use crate::tools::{BoxPainter, Captor, Shaper, UserEvent, ViewStarting, ViewUpdating};
+use crate::tools::{BoxPainter, Captor, Shaper, UserEvent, ViewStarting, ViewModel};
 use crate::tools::frame::Frame;
 use crate::tools::painters::{ButtonPainter, ColorIndex};
 use crate::tools::shapers::EdgeShaper;
@@ -20,7 +20,7 @@ impl Default for FabInit {
 impl ViewStarting for FabInit {
 	type Model = Fab;
 
-	fn start_view(self, effects: &mut ViewEffects<FabMsg>) -> Self::Model {
+	fn init_view_model(self, effects: &mut ViewEffects<FabMsg>) -> Self::Model {
 		let model = Fab { init: self, ..default() };
 		effects.set_shaper(model.to_shaper());
 		model
@@ -39,10 +39,10 @@ pub struct Fab {
 	pressed: bool,
 }
 
-impl ViewUpdating for Fab {
+impl ViewModel for Fab {
 	type Msg = FabMsg;
 
-	fn update_view(&mut self, msg: Self::Msg, effects: &mut ViewEffects<Self::Msg>) {
+	fn update_as_view_model(&mut self, msg: Self::Msg, effects: &mut ViewEffects<Self::Msg>) {
 		match msg {
 			FabMsg::Press => if !self.pressed {
 				self.pressed = true;

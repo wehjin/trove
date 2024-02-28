@@ -1,10 +1,23 @@
-use bevy::prelude::{Component, Entity};
 use std::collections::HashSet;
+
+use bevy::prelude::{Component, Entity};
+
 use crate::components::fill::Fill;
-use crate::tools::{BoxPainter, Captor, Shaper, UserEvent};
+use crate::tools::{BoxPainter, Captor, Shaper, UserEvent, ViewModel, ViewStarting};
 use crate::tools::frame::Frame;
 
-#[derive(Component, Default)]
+#[derive(Component)]
+pub struct ViewSeed<T: ViewStarting + Send + Sync + 'static> {
+	pub value: Option<Box<T>>,
+}
+
+#[derive(Component)]
+pub struct ViewProcess<Msg> {
+	pub model: Option<Box<dyn ViewModel<Msg=Msg> + Send + Sync>>,
+	pub msg_queue: Vec<Msg>,
+}
+
+#[derive(Component)]
 pub struct ModelOutputs<Msg> {
 	pub shaper: Option<Box<dyn Shaper<Msg> + Send + Sync>>,
 }
@@ -15,7 +28,7 @@ pub struct ShaperInputs {
 	pub edge_frame: Option<Frame>,
 }
 
-#[derive(Component, Default)]
+#[derive(Component)]
 pub struct CaptorInputs<Msg> {
 	pub captor: Option<Captor<Msg>>,
 }
@@ -45,3 +58,6 @@ pub struct MeshInputs {
 pub struct MeshOutputs {
 	pub mesh_ids: Vec<Entity>,
 }
+
+#[derive(Component)]
+pub struct RootViewMarker;

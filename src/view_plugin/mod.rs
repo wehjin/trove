@@ -7,9 +7,9 @@ use bevy::prelude::IntoSystemConfigs;
 use crate::resources::solar_dark;
 use crate::systems::console::add_console;
 use crate::systems::setup::{add_app_assets, setup_camera};
-use crate::tools::views::FabMsg;
-use crate::tools::ViewStarting;
-use crate::view_plugin::systems::{add_root_view, update_fills, update_focus_options, update_meshes, update_model_queue, update_models, update_painters_captors, update_user_queue};
+use crate::tools::{ViewStarting, ViewModel};
+use crate::tools::views::FabInit;
+use crate::view_plugin::systems::{add_root_view, start_views, update_fills, update_focus_options, update_meshes, update_model_queue, update_painters_captors, update_user_queue, update_views};
 
 pub mod components;
 pub mod systems;
@@ -39,32 +39,34 @@ impl<Seed> Plugin for AlphaPlugin<Seed>
 			.add_systems(Update, update_user_queue)
 			.add_systems(Update, update_fills)
 			.add_systems(Update, update_meshes.after(update_fills))
-			.add_plugins(BetaPlugin::<FabMsg>::default())
+			.add_plugins(BetaPlugin::<FabInit>::default())
 		;
 	}
 }
 
-pub struct BetaPlugin<Msg> {
-	msg: PhantomData<Msg>,
+pub struct BetaPlugin<Seed> {
+	data: PhantomData<Seed>,
 }
 
-impl<Msg> Default for BetaPlugin<Msg> where
-	Msg: Copy + Send + Sync + 'static + Debug,
+impl<Seed> Default for BetaPlugin<Seed> where
+	Seed: ViewStarting + Send + Sync + 'static,
 {
 	fn default() -> Self {
-		Self { msg: PhantomData }
+		Self { data: PhantomData }
 	}
 }
 
-impl<Msg> Plugin for BetaPlugin<Msg>
-	where Msg: Copy + Send + Sync + 'static + Debug,
+impl<Seed> Plugin for BetaPlugin<Seed>
+	where Seed: ViewStarting + Send + Sync + 'static,
+	      <Seed::Model as ViewModel>::Msg: Copy + Debug
 {
 	fn build(&self, app: &mut App) {
 		app
-			.add_systems(Update, update_model_queue::<Msg>)
-			.add_systems(Update, update_models::<Msg>)
-			.add_systems(Update, update_painters_captors::<Msg>)
-			.add_systems(Update, update_focus_options::<Msg>)
+			.add_systems(Update, start_views::<Seed>)
+			.add_systems(Update, update_views::<<Seed::Model as ViewModel>::Msg>)
+			.add_systems(Update, update_painters_captors::<<Seed::Model as ViewModel>::Msg>)
+			.add_systems(Update, update_focus_options::<<Seed::Model as ViewModel>::Msg>)
+			.add_systems(Update, update_model_queue::<<Seed::Model as ViewModel>::Msg>)
 		;
 	}
 }

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use crate::components::fill::Fill;
-use crate::view_plugin::tools::ViewEffects;
 use crate::tools::frame::Frame;
+use crate::view_plugin::tools::ViewEffects;
 
 pub mod console;
 pub mod fill;
@@ -14,14 +14,14 @@ pub mod shapers;
 pub mod views;
 
 pub trait ViewStarting {
-	type Model: ViewUpdating + Send + Sync + 'static;
+	type Model: ViewModel + Send + Sync + 'static;
 
-	fn start_view(self, effects: &mut ViewEffects<<Self::Model as ViewUpdating>::Msg>) -> Self::Model;
+	fn init_view_model(self, effects: &mut ViewEffects<<Self::Model as ViewModel>::Msg>) -> Self::Model;
 }
 
-pub trait ViewUpdating {
+pub trait ViewModel {
 	type Msg: Send + Sync + 'static;
-	fn update_view(&mut self, msg: Self::Msg, effects: &mut ViewEffects<Self::Msg>);
+	fn update_as_view_model(&mut self, msg: Self::Msg, effects: &mut ViewEffects<Self::Msg>);
 }
 
 pub trait Shaper<Msg> {

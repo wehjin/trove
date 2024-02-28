@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	App::new()
 		.add_plugins(DefaultPlugins)
 		.add_plugins(AlphaPlugin::<SampleAppSettings>::default())
-		.add_plugins(BetaPlugin::<()>::default())
+		.add_plugins(BetaPlugin::<SampleAppSettings>::default())
 		.add_systems(Startup, add_panels.after(add_console))
 		.add_systems(Startup, add_circles.after(add_console).after(add_app_assets))
 		.insert_resource(root_view_starter)

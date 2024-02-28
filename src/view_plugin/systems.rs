@@ -1,57 +1,87 @@
-use bevy::prelude::{Changed, Commands, default, KeyCode, Query, Res, ResMut, Transform};
+use std::collections::HashSet;
+use std::fmt::Debug;
+
 use bevy::input::ButtonInput;
 use bevy::log::info;
-use std::fmt::Debug;
-use std::collections::HashSet;
+use bevy::prelude::{Changed, Commands, default, KeyCode, Query, Res, ResMut, Transform};
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
+
 use crate::components::setup::AppAssets;
-use crate::components::view::{ModelInputs, RootViewMarker};
-use crate::view_plugin::tools::RootViewStarter;
-use crate::tools::{ ShaperEffects, ShaperMsg, UserEvent, ViewStarting};
+use crate::tools::{ShaperEffects, ShaperMsg, UserEvent, ViewModel, ViewStarting};
 use crate::tools::console::Console;
 use crate::tools::fill::Glyph;
 use crate::tools::frame::Frame;
-use crate::view_plugin::components::{CaptorInputs, FocusOptions, MeshInputs, MeshOutputs, ModelOutputs, PainterInputs, ShaperInputs, UserEventQueue};
+use crate::view_plugin::components::{CaptorInputs, FocusOptions, MeshInputs, MeshOutputs, ViewProcess, ModelOutputs, PainterInputs, RootViewMarker, ShaperInputs, UserEventQueue, ViewSeed};
 use crate::view_plugin::tools::{ViewBundle, ViewEffects};
+use crate::view_plugin::tools::RootViewStarter;
 
-pub fn add_root_view<T: ViewStarting + Send + Sync + 'static>(console: Res<Console>, mut starter: ResMut<RootViewStarter<T>>, mut commands: Commands) {
+pub fn add_root_view<T: ViewStarting + Send + Sync + 'static>(mut root_seed: ResMut<RootViewStarter<T>>, mut commands: Commands) {
 	info!("add_root_view");
-	let (cols, rows) = console.width_height();
-	let mut effects = ViewEffects { commands: &mut commands, new_shaper: None };
-	let model = starter.value.take().expect("root view starter").start_view(&mut effects);
-	let model_inputs = ModelInputs {
-		model: Box::new(model),
-		msg_queue: Vec::new(),
-	};
-	let model_outputs = ModelOutputs {
-		shaper: effects.new_shaper,
-	};
-	let shaper_inputs = ShaperInputs {
-		shaper_count: 1,
-		edge_frame: Some(Frame::from_cols_rows_z(cols, rows, 1)),
-	};
+	let seed = root_seed.value.take().expect("root-view seed");
 	let bundle = ViewBundle {
-		model_inputs,
-		model_outputs,
-		shaper_inputs,
-		painter_inputs: PainterInputs::default(),
-		mesh_inputs: MeshInputs { fills: Vec::new(), max_row: rows },
-		mesh_outputs: MeshOutputs::default(),
-		captor_inputs: CaptorInputs { captor: None },
-		focus_options: FocusOptions::default(),
-		user_event_queue: UserEventQueue::default(),
+		view_seed: ViewSeed { value: Some(Box::new(seed)) },
+		..ViewBundle::<T>::default()
 	};
 	commands.spawn((RootViewMarker, bundle));
 }
 
-pub fn update_models<Msg: Send + Sync + 'static + Debug>(
+pub fn start_views<T: ViewStarting + Send + Sync + 'static>(
+	console: Res<Console>,
 	mut query: Query<(
-		&mut ModelInputs<Msg>,
+		&mut ViewSeed<T>,
+		&mut ViewProcess<<T::Model as ViewModel>::Msg>,
+		&mut ModelOutputs<<T::Model as ViewModel>::Msg>,
+		&mut ShaperInputs,
+		&mut MeshInputs,
+		Option<&RootViewMarker>
+	), Changed<ViewSeed<T>>>)
+{
+	for (
+		mut view_seed,
+		mut model_inputs,
+		mut model_outputs,
+		mut shaper_inputs,
+		mut mesh_inputs,
+		root_view_marker
+	) in query.iter_mut() {
+		if view_seed.value.is_none() {
+			// DO NOT take from comp if no seed, avoids an infinite loop where the comp is changed
+			// every time this system is run.
+			continue;
+		}
+		let seed = view_seed.value.take().expect("seed");
+		{
+			let mut effects = ViewEffects { new_shaper: None };
+			let model = seed.init_view_model(&mut effects);
+			model_inputs.model = Some(Box::new(model));
+			if let Some(shaper) = effects.new_shaper {
+				model_outputs.shaper = Some(shaper);
+				shaper_inputs.shaper_count += 1;
+			}
+		}
+		{
+			let (cols, rows) = console.width_height();
+			mesh_inputs.max_row = rows;
+			if root_view_marker.is_some() {
+				shaper_inputs.edge_frame = Some(Frame::from_cols_rows_z(cols, rows, 1));
+			}
+		}
+	}
+}
+
+pub fn update_views<Msg: Send + Sync + 'static + Debug>(
+	mut query: Query<(
+		&mut ViewProcess<Msg>,
 		&mut ModelOutputs<Msg>,
 		&mut ShaperInputs
-	), Changed<ModelInputs<Msg>>>, mut commands: Commands) {
+	), Changed<ViewProcess<Msg>>>
+) {
 	for (mut model_inputs, mut model_outputs, mut shaper_inputs) in query.iter_mut() {
 		info!("update_models");
+		if model_inputs.model.is_none() {
+			continue;
+		}
+		let mut model = model_inputs.model.take().expect("some model");
 		if model_inputs.msg_queue.is_empty() {
 			// DO NOT touch msg_queue mutable with pop if it is empty.
 			info!("  no msg in queue");
@@ -59,8 +89,9 @@ pub fn update_models<Msg: Send + Sync + 'static + Debug>(
 		}
 		if let Some(msg) = model_inputs.msg_queue.pop() {
 			info!("  msg: {:?}", msg);
-			let mut effects = ViewEffects { commands: &mut commands, new_shaper: None };
-			model_inputs.model.update_view(msg, &mut effects);
+			let mut effects = ViewEffects { new_shaper: None };
+			model.update_as_view_model(msg, &mut effects);
+			model_inputs.model = Some(model);
 			if let Some(shaper) = effects.new_shaper {
 				model_outputs.shaper = Some(shaper);
 				shaper_inputs.shaper_count += 1;
@@ -134,7 +165,7 @@ pub fn update_user_queue(keyboard_input: Res<ButtonInput<KeyCode>>, mut query: Q
 }
 
 pub fn update_model_queue<Msg: Copy + Send + Sync + 'static>(
-	mut query: Query<(&UserEventQueue, &CaptorInputs<Msg>, &mut ModelInputs<Msg>), Changed<UserEventQueue>>
+	mut query: Query<(&UserEventQueue, &CaptorInputs<Msg>, &mut ViewProcess<Msg>), Changed<UserEventQueue>>
 ) {
 	for (user_queue, captor_inputs, mut model_inputs) in query.iter_mut() {
 		if let Some(captor) = &captor_inputs.captor {
