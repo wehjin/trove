@@ -12,6 +12,7 @@ use view_plugin::AlphaPlugin;
 use view_plugin::tools::RootViewStarter;
 
 use crate::tools::views::FabInit;
+use crate::view_plugin::BetaPlugin;
 
 pub mod components;
 pub mod view_plugin;
@@ -21,11 +22,12 @@ pub mod tools;
 
 fn main() -> Result<(), Box<dyn Error>> {
 	Console::start()?;
-	let _root_view_starter = RootViewStarter { value: Some(SampleAppSettings) };
-	let root_view_starter = RootViewStarter { value: Some(FabInit::default()) };
+	let root_view_starter = RootViewStarter { value: Some(SampleAppSettings) };
+	let _root_view_starter = RootViewStarter { value: Some(FabInit::default()) };
 	App::new()
 		.add_plugins(DefaultPlugins)
-		.add_plugins(AlphaPlugin)
+		.add_plugins(AlphaPlugin::<SampleAppSettings>::default())
+		.add_plugins(BetaPlugin::<()>::default())
 		.add_systems(Startup, add_panels.after(add_console))
 		.add_systems(Startup, add_circles.after(add_console).after(add_app_assets))
 		.insert_resource(root_view_starter)
