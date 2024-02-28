@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+use std::default::Default;
 use std::fmt::Debug;
 
 use bevy::prelude::{Bundle, ButtonInput, Changed, Commands, Component, default, Entity, info, KeyCode, Query, Res, ResMut, Transform};
@@ -7,7 +9,7 @@ use crate::components::fill::Fill;
 use crate::components::setup::AppAssets;
 use crate::components::view::{ModelInputs, RootViewMarker};
 use crate::RootViewStarter;
-use crate::tools::{BoxCaptor, BoxPainter, BoxShaper, Shaper, ShaperEffects, ShaperMsg, ViewStarting};
+use crate::tools::{BoxPainter, BoxShaper, Captor, Shaper, ShaperEffects, ShaperMsg, UserEvent, ViewStarting};
 use crate::tools::console::Console;
 use crate::tools::fill::Glyph;
 use crate::tools::frame::Frame;
@@ -28,19 +30,18 @@ pub struct ShaperInputs {
 
 #[derive(Component, Default)]
 pub struct CaptorInputs<Msg> {
-	captor: Option<BoxCaptor<Msg>>,
+	captor: Option<Captor<Msg>>,
 }
 
-impl<Msg> CaptorInputs<Msg> {
-	pub fn to_space_msg(&self, pressed: bool) -> Option<Msg> {
-		if let Some(captor) = &self.captor {
-			captor.to_space_msg(pressed)
-		} else {
-			None
-		}
-	}
+#[derive(Component, Default)]
+pub struct FocusOptions {
+	captures: HashSet<UserEvent>,
 }
 
+#[derive(Component, Default)]
+pub struct UserEventQueue {
+	user_events: Vec<UserEvent>,
+}
 
 #[derive(Component, Default)]
 pub struct PainterInputs {
@@ -67,6 +68,8 @@ struct ViewBundle<Msg: Send + Sync + 'static> {
 	mesh_inputs: MeshInputs,
 	mesh_outputs: MeshOutputs,
 	captor_inputs: CaptorInputs<Msg>,
+	focus_options: FocusOptions,
+	user_event_queue: UserEventQueue,
 }
 
 pub struct ViewEffects<'a, 'w, 's, Msg> {
@@ -96,18 +99,16 @@ pub fn add_root_view<T: ViewStarting + Send + Sync + 'static>(console: Res<Conso
 		shaper_count: 1,
 		edge_frame: Some(Frame::from_cols_rows_z(cols, rows, 1)),
 	};
-	let painter_inputs = PainterInputs { painters: Vec::new() };
-	let mesh_inputs = MeshInputs { fills: Vec::new(), max_row: rows };
-	let mesh_outputs = MeshOutputs::default();
-	let captor_inputs = CaptorInputs { captor: None };
 	let bundle = ViewBundle {
 		model_inputs,
 		model_outputs,
 		shaper_inputs,
-		painter_inputs,
-		mesh_inputs,
-		mesh_outputs,
-		captor_inputs,
+		painter_inputs: PainterInputs::default(),
+		mesh_inputs: MeshInputs { fills: Vec::new(), max_row: rows },
+		mesh_outputs: MeshOutputs::default(),
+		captor_inputs: CaptorInputs { captor: None },
+		focus_options: FocusOptions::default(),
+		user_event_queue: UserEventQueue::default(),
 	};
 	commands.spawn((RootViewMarker, bundle));
 }
@@ -165,22 +166,51 @@ pub fn update_painters_captors<Msg: Send + Sync + 'static>(
 	}
 }
 
-pub fn keyboard_input<Msg: Send + Sync + 'static>(keyboard_input: Res<ButtonInput<KeyCode>>, mut query: Query<(&CaptorInputs<Msg>, &mut ModelInputs<Msg>)>) {
-	if keyboard_input.just_pressed(KeyCode::Space) {
-		info!("' ' just pressed");
-		for (captor_input, mut model_inputs) in query.iter_mut() {
-			let space_msg = captor_input.to_space_msg(true);
-			if let Some(msg) = space_msg {
-				model_inputs.msg_queue.push(msg)
-			}
+pub fn update_focus_options<Msg: Send + Sync + 'static>(
+	mut query: Query<(&CaptorInputs<Msg>, &mut FocusOptions), Changed<CaptorInputs<Msg>>>
+) {
+	for (captor_inputs, mut focus_options) in query.iter_mut() {
+		if let Some(captor) = &captor_inputs.captor {
+			let captures = captor.event_map.iter().map(|(k, _)| *k).collect::<HashSet<_>>();
+			focus_options.captures = captures;
+		} else {
+			focus_options.captures = HashSet::new();
 		}
 	}
-	if keyboard_input.just_released(KeyCode::Space) {
-		info!("' ' just released");
-		for (captor_input, mut model_inputs) in query.iter_mut() {
-			let space_msg = captor_input.to_space_msg(false);
-			if let Some(msg) = space_msg {
-				model_inputs.msg_queue.push(msg)
+}
+
+pub fn update_user_queue(keyboard_input: Res<ButtonInput<KeyCode>>, mut query: Query<(&FocusOptions, &mut UserEventQueue)>) {
+	for (focus_options, mut queue) in query.iter_mut() {
+		let mut new_queue = Vec::new();
+		if keyboard_input.just_pressed(KeyCode::Space) {
+			info!("' ' just pressed");
+			let user_event = UserEvent::PressStart;
+			if focus_options.captures.contains(&user_event) {
+				new_queue.push(user_event);
+			}
+		}
+		if keyboard_input.just_released(KeyCode::Space) {
+			info!("' ' just released");
+			let user_event = UserEvent::PressEnd;
+			if focus_options.captures.contains(&user_event) {
+				new_queue.push(user_event);
+			}
+		}
+		if !new_queue.is_empty() {
+			queue.user_events = new_queue;
+		}
+	}
+}
+
+pub fn update_model_queue<Msg: Copy + Send + Sync + 'static>(
+	mut query: Query<(&UserEventQueue, &CaptorInputs<Msg>, &mut ModelInputs<Msg>), Changed<UserEventQueue>>
+) {
+	for (user_queue, captor_inputs, mut model_inputs) in query.iter_mut() {
+		if let Some(captor) = &captor_inputs.captor {
+			for event in &user_queue.user_events {
+				if let Some(msg) = captor.get_msg(event) {
+					model_inputs.msg_queue.push(msg);
+				}
 			}
 		}
 	}

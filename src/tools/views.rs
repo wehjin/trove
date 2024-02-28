@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+
 use bevy::utils::default;
 
 use crate::resources::solar_dark;
 use crate::systems::ViewEffects;
-use crate::tools::{BoxPainter, Captor, Shaper, ViewStarting, ViewUpdating};
+use crate::tools::{BoxPainter, Captor, Shaper, UserEvent, ViewStarting, ViewUpdating};
+use crate::tools::frame::Frame;
 use crate::tools::painters::{ButtonPainter, ColorIndex};
 use crate::tools::shapers::EdgeShaper;
 
@@ -71,19 +74,14 @@ impl Fab {
 					}) as BoxPainter
 				}
 			},
-			|_frame| Box::new(FabCaptor {}));
+			Self::captor);
 		shaper
 	}
-}
 
-pub struct FabCaptor;
-
-impl Captor<FabMsg> for FabCaptor {
-	fn to_space_msg(&self, pressed: bool) -> Option<FabMsg> {
-		if pressed {
-			Some(FabMsg::Press)
-		} else {
-			Some(FabMsg::Release)
-		}
+	fn captor(_frame: Frame) -> Captor<FabMsg> {
+		let mut event_map = HashMap::new();
+		event_map.insert(UserEvent::PressStart, FabMsg::Press);
+		event_map.insert(UserEvent::PressEnd, FabMsg::Release);
+		Captor { event_map }
 	}
 }

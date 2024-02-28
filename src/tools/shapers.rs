@@ -1,16 +1,16 @@
-use crate::tools::{BoxCaptor, BoxPainter, Shaper, ShaperEffects, ShaperMsg};
+use crate::tools::{BoxPainter, Captor, Shaper, ShaperEffects, ShaperMsg};
 use crate::tools::frame::Frame;
 
 pub struct EdgeShaper<Msg> {
 	edge_frame: Option<Frame>,
 	build_painter: Box<dyn Fn(Frame) -> BoxPainter + Send + Sync + 'static>,
-	build_captor: Box<dyn Fn(Frame) -> BoxCaptor<Msg> + Send + Sync + 'static>,
+	build_captor: Box<dyn Fn(Frame) -> Captor<Msg> + Send + Sync + 'static>,
 }
 
 impl<Msg> EdgeShaper<Msg> {
 	pub fn new(
 		build_painter: impl Fn(Frame) -> BoxPainter + Send + Sync + 'static,
-		build_captor: impl Fn(Frame) -> BoxCaptor<Msg> + Send + Sync + 'static) -> Self {
+		build_captor: impl Fn(Frame) -> Captor<Msg> + Send + Sync + 'static) -> Self {
 		Self { edge_frame: None, build_painter: Box::new(build_painter), build_captor: Box::new(build_captor) }
 	}
 }

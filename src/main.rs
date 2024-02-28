@@ -11,7 +11,7 @@ use tools::sample::SampleAppSettings;
 use tools::ViewStarting;
 
 use crate::resources::solar_dark;
-use crate::systems::{add_root_view, keyboard_input, update_fills, update_meshes, update_models, update_painters_captors};
+use crate::systems::{add_root_view, update_fills, update_focus_options, update_meshes, update_model_queue, update_models, update_painters_captors, update_user_queue};
 use crate::tools::views::{FabInit, FabMsg};
 
 pub mod components;
@@ -38,9 +38,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 		.add_systems(Startup, add_panels.after(add_console))
 		.add_systems(Startup, add_circles.after(add_console).after(add_app_assets))
 		.add_systems(Startup, add_root_view::<FabInit>.after(add_console))
+		.add_systems(Update, update_model_queue::<FabMsg>)
 		.add_systems(Update, update_models::<FabMsg>)
 		.add_systems(Update, update_painters_captors::<FabMsg>)
-		.add_systems(Update, keyboard_input::<FabMsg>)
+		.add_systems(Update, update_focus_options::<FabMsg>)
+		.add_systems(Update, update_user_queue)
 		.add_systems(Update, update_fills)
 		.add_systems(Update, update_meshes.after(update_fills))
 		.run();

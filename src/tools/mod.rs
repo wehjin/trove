@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::components::fill::Fill;
 use crate::systems::ViewEffects;
 use crate::tools::frame::Frame;
@@ -34,7 +36,7 @@ pub enum ShaperMsg {
 
 pub struct ShaperEffects<Msg> {
 	pub new_painters: Option<Vec<BoxPainter>>,
-	pub new_captor: Option<BoxCaptor<Msg>>,
+	pub new_captor: Option<Captor<Msg>>,
 }
 
 impl<Msg> Default for ShaperEffects<Msg> {
@@ -47,7 +49,7 @@ impl<Msg> ShaperEffects<Msg> {
 	pub fn set_painters(&mut self, painters: Vec<BoxPainter>) {
 		self.new_painters = Some(painters);
 	}
-	pub fn set_captor(&mut self, captor: BoxCaptor<Msg>) {
+	pub fn set_captor(&mut self, captor: Captor<Msg>) {
 		self.new_captor = Some(captor);
 	}
 }
@@ -58,8 +60,22 @@ pub trait Painter {
 
 pub type BoxPainter = Box<dyn Painter + Send + Sync>;
 
-pub trait Captor<Msg> {
-	fn to_space_msg(&self, pressed: bool) -> Option<Msg>;
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+pub enum UserEvent {
+	PressStart,
+	PressEnd,
 }
 
-pub type BoxCaptor<Msg> = Box<dyn Captor<Msg> + Send + Sync>;
+pub struct Captor<Msg> {
+	pub event_map: HashMap<UserEvent, Msg>,
+}
+
+impl<Msg: Copy> Captor<Msg> {
+	pub fn get_msg(&self, key: &UserEvent) -> Option<Msg> {
+		if let Some(msg) = self.event_map.get(key) {
+			Some(*msg)
+		} else {
+			None
+		}
+	}
+}
