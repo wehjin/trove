@@ -30,6 +30,12 @@ pub struct Fill {
 }
 
 impl Fill {
+	pub fn color_tile(frame: Frame, color: usize) -> Self {
+		Self { glyph: Glyph::Tile(color), frame }
+	}
+}
+
+impl Fill {
 	pub fn left(&self) -> f32 {
 		self.frame.left as f32
 	}

@@ -1,49 +1,42 @@
-use crate::tools::{BoxPainter, Shaper, ShaperEffects, ShaperMsg, solar_dark, ViewModel};
+use crate::tools::{solar_dark, View, ViewChanging};
+use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::inset::Inset;
-use crate::tools::painters::{BodyPanelPainter, ButtonPainter, ColorIndex, StringPainter, TitlePainter};
 use crate::tools::ViewStarting;
 
-pub struct SampleAppSettings;
+pub struct SampleAppInit;
 
-pub struct SampleApp;
-
-impl ViewStarting for SampleAppSettings {
+impl ViewStarting for SampleAppInit {
 	type Model = SampleApp;
-	fn init_view_model(self) -> Self::Model {
+	fn init(self) -> Self::Model {
 		SampleApp
 	}
 }
 
-impl ViewModel for SampleApp {
+pub struct SampleApp;
+
+impl ViewChanging for SampleApp {
 	type Msg = ();
-	fn update_as_view_model(&mut self, _msg: Self::Msg) {}
+	fn update(&mut self, _msg: Self::Msg) {}
 }
 
-#[derive(Default)]
-struct MyShaper {
-	edge_frame: Option<Frame>,
-}
-
-impl Shaper<()> for MyShaper {
-	fn shape(&mut self, msg: ShaperMsg, effects: &mut ShaperEffects<()>) {
-		let ShaperMsg::SetEdge(edge_zrect) = msg;
-		let edge_frame = edge_zrect.inset(Inset::DoubleCols(1)).move_closer(1);
-		if self.edge_frame == Some(edge_frame) {
-			return;
-		}
-		self.edge_frame = Some(edge_frame);
+impl View for SampleApp {
+	fn get_fills(&self, edge_frame: Frame) -> Vec<Fill> {
+		let edge_frame = edge_frame.inset(Inset::DoubleCols(1)).move_closer(1);
+		const TITLE_TEXT: &str = "Assets";
 		const EMPTY_TEXT: &str = "Empty in assets";
 		const BUTTON_LABEL: &str = "{+}";
 		let (title_frame, body_frame) = edge_frame.split_from_top(1);
-		let text_frame = body_frame.into_single_row_fixed_width_centered(EMPTY_TEXT.chars().count() as u16).move_closer(1);
+		let empty_text_frame = body_frame.into_single_row_fixed_width_centered(EMPTY_TEXT.chars().count() as u16).move_closer(1);
 		let button_frame = body_frame.into_single_row_fixed_width_at_offset_from_bottom_right(BUTTON_LABEL.chars().count() as u16, 2, 1).move_closer(1);
-		let painters: Vec<BoxPainter> = vec![
-			Box::new(TitlePainter(title_frame)),
-			Box::new(BodyPanelPainter(body_frame)),
-			Box::new(StringPainter { frame: text_frame, text: EMPTY_TEXT.to_string(), text_color: ColorIndex(solar_dark::BASE01) }),
-			Box::new(ButtonPainter { frame: button_frame, label: BUTTON_LABEL.to_string(), label_color: ColorIndex(solar_dark::BASE01), base_color: ColorIndex(solar_dark::BASE3) }),
+		let back_fills = vec![
+			Fill::color_tile(title_frame, solar_dark::BASE02),
+			Fill::color_tile(body_frame, solar_dark::BASE03),
+			Fill::color_tile(button_frame, solar_dark::BASE3),
 		];
-		effects.set_painters(painters);
+		let title_fills = string_to_fills(TITLE_TEXT, title_frame.move_closer(1).inset(Inset::Cols(2)), solar_dark::BASE1);
+		let empty_text_fills = string_to_fills(EMPTY_TEXT, empty_text_frame, solar_dark::BASE0);
+		let button_text_fills = string_to_fills(BUTTON_LABEL, button_frame.move_closer(1), solar_dark::BASE00);
+		vec![back_fills, title_fills, empty_text_fills, button_text_fills].into_iter().flatten().collect()
 	}
 }

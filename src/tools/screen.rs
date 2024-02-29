@@ -4,6 +4,7 @@ use crossterm::style::Color;
 
 use crate::tools::console::Console;
 use crate::tools::fill::{Fill, Glyph};
+use crate::tools::frame::Frame;
 use crate::tools::solar_dark;
 
 #[derive(Default)]
@@ -14,6 +15,7 @@ pub struct Screen {
 }
 
 impl Screen {
+	pub fn to_frame(&self) -> Frame { Frame::from_cols_rows_z(self.max_col, self.max_row, 0) }
 	pub fn in_range_col_row(&self, col: i16, row: i16) -> Option<(u16, u16)> {
 		if col >= 0 && (col as u16) < self.max_col
 			&& row >= 0 && (row as u16) < self.max_row {
@@ -61,6 +63,8 @@ impl Screen {
 					let rune = room.top_rune();
 					let tile = room.top_tile();
 					console.move_color_print(col, row, rune.0, rune.1, tile.0);
+				} else {
+					console.move_color_print(col, row, '.', Color::Black, Color::Magenta)
 				}
 			}
 		}

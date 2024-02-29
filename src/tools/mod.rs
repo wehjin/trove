@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
+pub use crossterm::style::Color as Color;
+
 use fill::Fill;
 
 use crate::tools::frame::Frame;
-
-pub use crossterm::style::Color as Color;
 
 pub mod console;
 pub mod fill;
@@ -18,51 +18,19 @@ pub mod solar_dark;
 pub mod views;
 
 pub trait ViewStarting {
-	type Model: ViewModel + Send + Sync + 'static;
+	type Model: ViewChanging;
 
-	fn init_view_model(self) -> Self::Model;
+	fn init(self) -> Self::Model;
 }
 
-pub trait ViewModel {
+pub trait ViewChanging {
 	type Msg: Send + Sync + 'static;
-	fn update_as_view_model(&mut self, msg: Self::Msg);
+	fn update(&mut self, msg: Self::Msg);
 }
 
-pub trait Shaper<Msg> {
-	fn shape(&mut self, msg: ShaperMsg, effects: &mut ShaperEffects<Msg>);
+pub trait View {
+	fn get_fills(&self, edge_frame: Frame) -> Vec<Fill>;
 }
-
-pub type BoxShaper<Msg> = Box<dyn Shaper<Msg> + Send + Sync>;
-
-pub enum ShaperMsg {
-	SetEdge(Frame)
-}
-
-pub struct ShaperEffects<Msg> {
-	pub new_painters: Option<Vec<BoxPainter>>,
-	pub new_captor: Option<Captor<Msg>>,
-}
-
-impl<Msg> Default for ShaperEffects<Msg> {
-	fn default() -> Self {
-		Self { new_painters: None, new_captor: None }
-	}
-}
-
-impl<Msg> ShaperEffects<Msg> {
-	pub fn set_painters(&mut self, painters: Vec<BoxPainter>) {
-		self.new_painters = Some(painters);
-	}
-	pub fn set_captor(&mut self, captor: Captor<Msg>) {
-		self.new_captor = Some(captor);
-	}
-}
-
-pub trait Painter {
-	fn paint(&self) -> Vec<Fill>;
-}
-
-pub type BoxPainter = Box<dyn Painter + Send + Sync>;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub enum UserEvent {
