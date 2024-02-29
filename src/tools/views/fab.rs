@@ -5,13 +5,13 @@ use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::views::{View, ViewStarting};
 
-pub struct FabInit(pub String);
+pub struct FabLabel(pub String);
 
-impl Default for FabInit {
+impl Default for FabLabel {
 	fn default() -> Self { Self("todo".into()) }
 }
 
-impl ViewStarting for FabInit {
+impl ViewStarting for FabLabel {
 	type Model = Fab;
 
 	fn into_view(self) -> Self::Model {
@@ -28,7 +28,7 @@ pub enum FabMsg {
 
 #[derive(Default)]
 pub struct Fab {
-	init: FabInit,
+	init: FabLabel,
 	pressed: bool,
 }
 

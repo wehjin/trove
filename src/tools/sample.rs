@@ -2,7 +2,7 @@ use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::inset::Inset;
 use crate::tools::solar_dark;
-use crate::tools::views::fab::{Fab, FabInit};
+use crate::tools::views::fab::{Fab, FabLabel};
 use crate::tools::views::View;
 use crate::tools::views::ViewStarting;
 
@@ -11,7 +11,7 @@ pub struct SampleAppInit;
 impl ViewStarting for SampleAppInit {
 	type Model = SampleApp;
 	fn into_view(self) -> Self::Model {
-		let fab = FabInit(" [+] ".to_string()).into_view();
+		let fab = FabLabel(" [+] ".to_string()).into_view();
 		SampleApp { fab }
 	}
 }
