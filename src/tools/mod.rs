@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-pub use crossterm::style::Color as Color;
+#[allow(unused)]
+pub use crossterm::style::Color;
 
 use fill::Fill;
 
