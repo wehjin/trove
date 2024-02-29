@@ -4,16 +4,13 @@ use crate::tools::frame::Frame;
 pub mod fab;
 
 pub trait ViewStarting {
-	type Model: ViewChanging;
+	type Model: View;
 
-	fn init(self) -> Self::Model;
-}
-
-pub trait ViewChanging {
-	type Msg: Send + Sync + 'static;
-	fn update(&mut self, msg: Self::Msg);
+	fn into_view(self) -> Self::Model;
 }
 
 pub trait View {
+	type Msg: Send + Sync + 'static;
+	fn update(&mut self, msg: Self::Msg);
 	fn get_fills(&self, edge_frame: Frame) -> Vec<Fill>;
 }

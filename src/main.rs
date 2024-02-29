@@ -4,14 +4,15 @@ use crossterm::event::{Event, KeyCode};
 
 use tools::console::Console;
 use tools::screen::Screen;
-
-use crate::tools::sample::SampleApp;
 use tools::views::View;
+
+use crate::tools::sample::SampleAppInit;
+use crate::tools::views::ViewStarting;
 
 pub mod tools;
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let app = SampleApp;
+	let app = SampleAppInit.into_view();
 	let mut console = Console::start()?;
 	loop {
 		let mut screen = Screen::new(console.width_height());
