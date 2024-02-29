@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::tools::inset::Inset;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Default)]
@@ -67,4 +69,6 @@ impl Frame {
 	pub fn height(&self) -> i16 {
 		self.bottom - self.top
 	}
+	pub fn col_range(&self) -> Range<i16> { self.left..self.right }
+	pub fn row_range(&self) -> Range<i16> { self.top..self.bottom }
 }

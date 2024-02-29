@@ -4,6 +4,8 @@ use fill::Fill;
 
 use crate::tools::frame::Frame;
 
+pub use crossterm::style::Color as Color;
+
 pub mod console;
 pub mod fill;
 pub mod frame;

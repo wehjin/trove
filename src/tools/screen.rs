@@ -3,6 +3,8 @@ use std::collections::{BTreeMap, HashMap};
 use crossterm::style::Color;
 
 use crate::tools::console::Console;
+use crate::tools::fill::{Fill, Glyph};
+use crate::tools::solar_dark;
 
 #[derive(Default)]
 pub struct Screen {
@@ -12,20 +14,16 @@ pub struct Screen {
 }
 
 impl Screen {
-	pub fn new((cols, rows): (u16, u16)) -> Self {
-		let mut screen = Self { max_col: cols, max_row: rows, ..Screen::default() };
-		for row in 0..screen.max_row {
-			for col in 0..screen.max_col {
-				let rune = match (row & 1) == 0 {
-					true => Rune('k', Color::Yellow),
-					false => Rune('z', Color::Green),
-				};
-				screen.room_mut(col, row).add_rune(1, rune);
-				screen.room_mut(col, row).add_tile(0, Tile(Color::Black));
-			}
+	pub fn in_range_col_row(&self, col: i16, row: i16) -> Option<(u16, u16)> {
+		if col >= 0 && (col as u16) < self.max_col
+			&& row >= 0 && (row as u16) < self.max_row {
+			Some((col as u16, row as u16))
+		} else {
+			None
 		}
-		screen
 	}
+	pub fn cols(&self) -> u16 { self.max_col }
+	pub fn rows(&self) -> u16 { self.max_row }
 	pub fn room(&self, col: u16, row: u16) -> Option<&Room> {
 		self.rooms.get(&(col, row))
 	}
@@ -35,7 +33,28 @@ impl Screen {
 		}
 		self.rooms.get_mut(&(col, row)).expect("room")
 	}
-	pub fn print(&self, console: &mut Console) {
+	pub fn add_fills(&mut self, fills: Vec<Fill>) {
+		for fill in fills {
+			for row in fill.frame.row_range() {
+				for col in fill.frame.col_range() {
+					if let Some((col, row)) = self.in_range_col_row(col, row) {
+						let z = fill.frame.z;
+						match fill.glyph {
+							Glyph::Rune(char, color) => {
+								let rune = Rune(char, solar_dark::color_by_index(color));
+								self.room_mut(col, row).add_rune(z, rune);
+							}
+							Glyph::Tile(color) => {
+								let tile = Tile(solar_dark::color_by_index(color));
+								self.room_mut(col, row).add_tile(z, tile);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	pub fn print_to(&self, console: &mut Console) {
 		for row in 0..self.max_row {
 			for col in 0..self.max_col {
 				if let Some(room) = self.room(col, row) {
@@ -49,6 +68,12 @@ impl Screen {
 	}
 }
 
+impl Screen {
+	pub fn new((cols, rows): (u16, u16)) -> Self {
+		Self { max_col: cols, max_row: rows, ..Screen::default() }
+	}
+}
+
 #[derive(Default)]
 pub struct Room {
 	z_tiles: BTreeMap<i16, Tile>,
@@ -56,13 +81,11 @@ pub struct Room {
 }
 
 impl Room {
-	pub fn add_tile(&mut self, z: u16, tile: Tile) {
-		let z: i16 = -(z as i16);
-		self.z_tiles.insert(z, tile);
+	pub fn add_tile(&mut self, z: i16, tile: Tile) {
+		self.z_tiles.insert(-z, tile);
 	}
-	pub fn add_rune(&mut self, z: u16, rune: Rune) {
-		let z: i16 = -(z as i16);
-		self.z_runes.insert(z, rune);
+	pub fn add_rune(&mut self, z: i16, rune: Rune) {
+		self.z_runes.insert(-z, rune);
 	}
 	pub fn top_tile(&self) -> Tile {
 		if self.z_tiles.is_empty() {
@@ -74,7 +97,7 @@ impl Room {
 	}
 	pub fn top_rune(&self) -> Rune {
 		if self.z_runes.is_empty() {
-			Rune('?', Color::Magenta)
+			Rune(' ', Color::Magenta)
 		} else {
 			let top_key = self.z_runes.keys().next().expect("rune key");
 			self.z_runes.get(top_key).cloned().expect("rune")
