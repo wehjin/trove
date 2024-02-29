@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-
-use crate::tools::{Captor, UserEvent, ViewChanging, ViewStarting};
+use crate::tools::{Captor, UserEvent};
 use crate::tools::frame::Frame;
+use crate::tools::views::{ViewChanging, ViewStarting};
 
 pub struct FabInit {
 	pub label: String,

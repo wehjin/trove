@@ -6,7 +6,7 @@ use tools::console::Console;
 use tools::screen::Screen;
 
 use crate::tools::sample::SampleApp;
-use crate::tools::View;
+use tools::views::View;
 
 pub mod tools;
 

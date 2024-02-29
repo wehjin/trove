@@ -1,8 +1,9 @@
-use crate::tools::{solar_dark, View, ViewChanging};
+use crate::tools::solar_dark;
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::inset::Inset;
-use crate::tools::ViewStarting;
+use crate::tools::views::{View, ViewChanging};
+use crate::tools::views::ViewStarting;
 
 pub struct SampleAppInit;
 
