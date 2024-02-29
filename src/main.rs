@@ -1,37 +1,30 @@
 use std::error::Error;
 
-use bevy::DefaultPlugins;
-use bevy::prelude::{App, IntoSystemConfigs, Startup};
+use crossterm::event::{Event, KeyCode};
 
-use systems::add_circles;
-use systems::console::{add_console, add_panels};
-use systems::setup::add_app_assets;
 use tools::console::Console;
-use tools::sample::SampleAppSettings;
-use view_plugin::AlphaPlugin;
-use view_plugin::tools::RootViewStarter;
+use tools::screen::Screen;
 
-use crate::tools::views::FabInit;
-use crate::view_plugin::BetaPlugin;
-
-pub mod components;
-pub mod view_plugin;
-pub mod resources;
-pub mod systems;
 pub mod tools;
 
 fn main() -> Result<(), Box<dyn Error>> {
-	Console::start()?;
-	let root_view_starter = RootViewStarter { value: Some(SampleAppSettings) };
-	let _root_view_starter = RootViewStarter { value: Some(FabInit::default()) };
-	App::new()
-		.add_plugins(DefaultPlugins)
-		.add_plugins(AlphaPlugin::<SampleAppSettings>::default())
-		.add_plugins(BetaPlugin::<SampleAppSettings>::default())
-		.add_systems(Startup, add_panels.after(add_console))
-		.add_systems(Startup, add_circles.after(add_console).after(add_app_assets))
-		.insert_resource(root_view_starter)
-		.run();
-	Console::stop()?;
+	let mut console = Console::start()?;
+	loop {
+		let screen = Screen::new(console.width_height());
+		screen.print(&mut console);
+		match console.read()? {
+			Event::FocusGained => {}
+			Event::FocusLost => {}
+			Event::Key(key_event) => {
+				if key_event.code == KeyCode::Char('q') {
+					break;
+				}
+			}
+			Event::Mouse(_) => {}
+			Event::Paste(_) => {}
+			Event::Resize(_, _) => {}
+		}
+	}
+	drop(console);
 	Ok(())
 }

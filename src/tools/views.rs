@@ -1,10 +1,6 @@
 use std::collections::HashMap;
 
-use bevy::utils::default;
-
-use crate::resources::solar_dark;
-use crate::view_plugin::tools::ViewEffects;
-use crate::tools::{BoxPainter, Captor, Shaper, UserEvent, ViewStarting, ViewModel};
+use crate::tools::{BoxPainter, Captor, Shaper, solar_dark, UserEvent, ViewModel, ViewStarting};
 use crate::tools::frame::Frame;
 use crate::tools::painters::{ButtonPainter, ColorIndex};
 use crate::tools::shapers::EdgeShaper;
@@ -20,9 +16,8 @@ impl Default for FabInit {
 impl ViewStarting for FabInit {
 	type Model = Fab;
 
-	fn init_view_model(self, effects: &mut ViewEffects<FabMsg>) -> Self::Model {
-		let model = Fab { init: self, ..default() };
-		effects.set_shaper(model.to_shaper());
+	fn init_view_model(self) -> Self::Model {
+		let model = Fab { init: self, ..Fab::default() };
 		model
 	}
 }
@@ -42,15 +37,13 @@ pub struct Fab {
 impl ViewModel for Fab {
 	type Msg = FabMsg;
 
-	fn update_as_view_model(&mut self, msg: Self::Msg, effects: &mut ViewEffects<Self::Msg>) {
+	fn update_as_view_model(&mut self, msg: Self::Msg) {
 		match msg {
 			FabMsg::Press => if !self.pressed {
 				self.pressed = true;
-				effects.set_shaper(self.to_shaper())
 			},
 			FabMsg::Release => if self.pressed {
 				self.pressed = false;
-				effects.set_shaper(self.to_shaper())
 			}
 		}
 	}

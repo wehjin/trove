@@ -1,6 +1,4 @@
-use crate::resources::solar_dark;
-use crate::view_plugin::tools::ViewEffects;
-use crate::tools::{BoxPainter, Shaper, ShaperEffects, ShaperMsg, ViewModel};
+use crate::tools::{BoxPainter, Shaper, ShaperEffects, ShaperMsg, solar_dark, ViewModel};
 use crate::tools::frame::Frame;
 use crate::tools::inset::Inset;
 use crate::tools::painters::{BodyPanelPainter, ButtonPainter, ColorIndex, StringPainter, TitlePainter};
@@ -12,15 +10,14 @@ pub struct SampleApp;
 
 impl ViewStarting for SampleAppSettings {
 	type Model = SampleApp;
-	fn init_view_model(self, effects: &mut ViewEffects<()>) -> Self::Model {
-		effects.set_shaper(MyShaper::default());
+	fn init_view_model(self) -> Self::Model {
 		SampleApp
 	}
 }
 
 impl ViewModel for SampleApp {
 	type Msg = ();
-	fn update_as_view_model(&mut self, _msg: Self::Msg, _effects: &mut ViewEffects<()>) {}
+	fn update_as_view_model(&mut self, _msg: Self::Msg) {}
 }
 
 #[derive(Default)]

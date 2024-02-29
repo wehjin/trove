@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use crate::components::fill::Fill;
+use fill::Fill;
+
 use crate::tools::frame::Frame;
-use crate::view_plugin::tools::ViewEffects;
 
 pub mod console;
 pub mod fill;
@@ -10,18 +10,20 @@ pub mod frame;
 pub mod inset;
 pub mod painters;
 pub mod sample;
+pub mod screen;
 pub mod shapers;
+pub mod solar_dark;
 pub mod views;
 
 pub trait ViewStarting {
 	type Model: ViewModel + Send + Sync + 'static;
 
-	fn init_view_model(self, effects: &mut ViewEffects<<Self::Model as ViewModel>::Msg>) -> Self::Model;
+	fn init_view_model(self) -> Self::Model;
 }
 
 pub trait ViewModel {
 	type Msg: Send + Sync + 'static;
-	fn update_as_view_model(&mut self, msg: Self::Msg, effects: &mut ViewEffects<Self::Msg>);
+	fn update_as_view_model(&mut self, msg: Self::Msg);
 }
 
 pub trait Shaper<Msg> {

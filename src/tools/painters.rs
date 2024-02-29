@@ -1,8 +1,7 @@
-use crate::components::fill::Fill;
-use crate::resources::solar_dark;
 use crate::tools::fill::{Glyph, string_to_fills};
+use crate::tools::fill::Fill;
 use crate::tools::frame::Frame;
-use crate::tools::Painter;
+use crate::tools::{Painter, solar_dark};
 
 pub struct BodyPanelPainter(pub Frame);
 
