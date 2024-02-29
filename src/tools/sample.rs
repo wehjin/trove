@@ -35,7 +35,7 @@ impl View for SampleApp {
 			Fill::color_tile(button_frame, solar_dark::BASE3),
 		];
 		let title_fills = string_to_fills(TITLE_TEXT, title_frame.move_closer(1).inset(Inset::Cols(2)), solar_dark::BASE1);
-		let empty_text_fills = string_to_fills(EMPTY_TEXT, empty_text_frame, solar_dark::BASE0);
+		let empty_text_fills = string_to_fills(EMPTY_TEXT, empty_text_frame, solar_dark::BASE01);
 		let button_text_fills = string_to_fills(BUTTON_LABEL, button_frame.move_closer(1), solar_dark::BASE00);
 		vec![back_fills, title_fills, empty_text_fills, button_text_fills].into_iter().flatten().collect()
 	}
