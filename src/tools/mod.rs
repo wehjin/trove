@@ -7,10 +7,8 @@ pub mod console;
 pub mod fill;
 pub mod frame;
 pub mod inset;
-pub mod painters;
 pub mod sample;
 pub mod screen;
-pub mod shapers;
 pub mod solar_dark;
 pub mod views;
 
