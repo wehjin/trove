@@ -1,4 +1,4 @@
-use crate::tools::Captor;
+use crate::tools::captor::Captor;
 use crate::tools::fill::Fill;
 use crate::tools::frame::Frame;
 

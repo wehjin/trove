@@ -1,4 +1,5 @@
-use crate::tools::{Captor, solar_dark};
+use crate::tools::solar_dark;
+use crate::tools::captor::Captor;
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::inset::Inset;
