@@ -29,6 +29,11 @@ impl Frame {
 		self.bottom = split;
 		(self, bottom)
 	}
+
+	pub fn into_single_row_full_width_shift_rows_down(self, rows: u16) -> Frame {
+		let next_top = self.top + rows as i16;
+		Frame { top: next_top, bottom: next_top + 1, ..self }
+	}
 	pub fn into_single_row_fixed_width_centered(self, width: u16) -> Frame {
 		let width = width as i16;
 		let left = self.left + (self.width() - width) / 2;
@@ -55,8 +60,8 @@ impl Frame {
 		self.left += cols as i16;
 		self
 	}
-	pub fn with_width_from_left(mut self, width: u16) -> Self {
-		self.right = self.left + width as i16;
+	pub fn with_width_from_left(mut self, width_cols: u16) -> Self {
+		self.right = self.left + width_cols as i16;
 		self
 	}
 	pub fn with_height_from_top(mut self, height: u16) -> Self {

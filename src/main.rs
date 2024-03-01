@@ -9,7 +9,6 @@ use tools::screen::Screen;
 
 use crate::tools::sample::{SampleApp, SampleAppMsg};
 use crate::tools::UserEvent;
-use crate::tools::views::fab::Fab;
 
 pub mod tools;
 
@@ -21,9 +20,7 @@ pub enum ProcessMsg {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let mut app = SampleApp {
-		fab: Fab { label: " [+] ".to_string(), ..Fab::default() }
-	};
+	let mut app = SampleApp::new();
 	let mut console = Console::start()?;
 	let (send_process, recv_process) = channel::<ProcessMsg>();
 	thread::spawn({

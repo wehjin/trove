@@ -1,7 +1,7 @@
 use crate::tools::frame::Frame;
 
-pub fn string_to_fills(string: &str, zrect: Frame, color_index: usize) -> Vec<Fill> {
-	let mut fill_zrect = zrect.with_width_from_left(1).with_height_from_top(1);
+pub fn string_to_fills(string: &str, frame: Frame, color_index: usize) -> Vec<Fill> {
+	let mut fill_zrect = frame.with_width_from_left(1).with_height_from_top(1);
 	let mut vec = Vec::new();
 	let chars = string.chars().collect::<Vec<_>>();
 	for i in 0..chars.len() {

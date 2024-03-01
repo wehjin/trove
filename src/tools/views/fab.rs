@@ -19,24 +19,31 @@ pub struct Fab {
 	pub pressed: bool,
 }
 
+pub fn timer_cmd<T: Send + Sync + 'static>(millis: u64, msg: T) -> Cmd<T> {
+	Cmd::Unit(Box::new(move || {
+		thread::sleep(Duration::from_millis(millis));
+		msg
+	}))
+}
+
+pub enum JustClicked {
+	Yes,
+	No(Cmd<FabMsg>),
+}
+
 impl Fab {
-	pub fn update(&mut self, msg: FabMsg) -> Cmd<FabMsg> {
-		let cmd = match msg {
+	pub fn update(&mut self, msg: FabMsg) -> JustClicked {
+		match msg {
 			FabMsg::Press if !self.pressed => {
 				self.pressed = true;
-				Cmd::Unit(Box::new(|| {
-					thread::sleep(Duration::from_millis(100));
-					FabMsg::Release
-				}))
+				JustClicked::No(timer_cmd(100, FabMsg::Release))
 			}
 			FabMsg::Release if self.pressed => {
 				self.pressed = false;
-				// TODO Notify caller.
-				Cmd::None
+				JustClicked::Yes
 			}
-			_ => Cmd::None
-		};
-		cmd
+			_ => JustClicked::No(Cmd::None)
+		}
 	}
 	pub fn get_fills_captors(&self, edge_frame: Frame) -> (Vec<Fill>, Vec<Captor<FabMsg>>) {
 		let (back_color, label_color) = match self.pressed {

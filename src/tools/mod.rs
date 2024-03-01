@@ -17,7 +17,7 @@ pub mod views;
 
 pub enum Cmd<Msg> {
 	None,
-	Unit(Box<dyn Fn() -> Msg + Send + Sync + 'static>),
+	Unit(Box<dyn FnOnce() -> Msg + Send + Sync + 'static>),
 }
 
 impl<Msg: Send + Sync + 'static + Debug> Cmd<Msg> {
