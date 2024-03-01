@@ -1,21 +1,10 @@
+use crate::tools::{Cmd, solar_dark};
 use crate::tools::captor::Captor;
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::inset::Inset;
-use crate::tools::solar_dark;
+use crate::tools::sample::SampleAppMsg::ForFab;
 use crate::tools::views::fab::{Fab, FabMsg};
-use crate::tools::views::View;
-use crate::tools::views::ViewStarting;
-
-pub struct SampleAppInit;
-
-impl ViewStarting for SampleAppInit {
-	type Model = SampleApp;
-	fn into_view(self) -> Self::Model {
-		let fab = Fab { label: " [+] ".to_string(), ..Fab::default() };
-		SampleApp { fab }
-	}
-}
 
 #[derive(Copy, Clone, Debug)]
 pub enum SampleAppMsg {
@@ -23,19 +12,16 @@ pub enum SampleAppMsg {
 }
 
 pub struct SampleApp {
-	fab: Fab,
+	pub fab: Fab,
 }
 
-impl View for SampleApp {
-	type Msg = SampleAppMsg;
-	fn update(&mut self, msg: Self::Msg) {
+impl SampleApp {
+	pub fn update(&mut self, msg: SampleAppMsg) -> Cmd<SampleAppMsg> {
 		match msg {
-			SampleAppMsg::ForFab(msg) => {
-				self.fab.update(msg);
-			}
+			ForFab(msg) => self.fab.update(msg).map(ForFab),
 		}
 	}
-	fn get_fills_captors(&self, edge_frame: Frame) -> (Vec<Fill>, Vec<Captor<Self::Msg>>) {
+	pub fn get_fills_captors(&self, edge_frame: Frame) -> (Vec<Fill>, Vec<Captor<SampleAppMsg>>) {
 		const EMPTY_TEXT: &str = "Empty in assets";
 		let edge_frame = edge_frame.inset(Inset::DoubleCols(1)).move_closer(1);
 		let (title_frame, body_frame) = edge_frame.split_from_top(1);

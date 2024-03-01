@@ -4,12 +4,6 @@ use crate::tools::frame::Frame;
 
 pub mod fab;
 
-pub trait ViewStarting {
-	type Model: View;
-
-	fn into_view(self) -> Self::Model;
-}
-
 pub trait View {
 	type Msg: Send + Sync + 'static;
 	fn update(&mut self, msg: Self::Msg);

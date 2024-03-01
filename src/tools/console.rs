@@ -36,7 +36,7 @@ impl Console {
 		)?;
 		Ok(Self)
 	}
-	pub fn read(&self) -> std::io::Result<ConsoleEvent> {
+	pub fn read() -> std::io::Result<ConsoleEvent> {
 		crossterm::event::read()
 	}
 	pub fn width_height(&self) -> (u16, u16) {
@@ -51,6 +51,11 @@ impl Console {
 			SetBackgroundColor(bg_color),
 			Print(text),
 		).expect("moveto, set_x_color, print");
+	}
+	pub fn clear(&mut self) {
+		queue!(stdout(),
+			Clear(ClearType::All)
+		).expect("clear all");
 	}
 	pub fn flush(&mut self) {
 		queue!(
