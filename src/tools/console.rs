@@ -3,7 +3,7 @@ use std::fmt::Display;
 use std::io::{stdout, Write};
 
 use crossterm::{execute, queue, terminal};
-use crossterm::cursor::MoveTo;
+use crossterm::cursor::{Hide, MoveTo, Show};
 pub use crossterm::event::Event as ConsoleEvent;
 use crossterm::style::{Color, Print, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::{Clear, ClearType, disable_raw_mode, DisableLineWrap, enable_raw_mode, EnableLineWrap, EnterAlternateScreen, LeaveAlternateScreen};
@@ -15,6 +15,7 @@ impl Drop for Console {
 		execute!(
 			stdout(),
 			Clear(ClearType::All),
+			Show,
 			LeaveAlternateScreen,
 			EnableLineWrap,
 		).expect("execute");
@@ -30,6 +31,7 @@ impl Console {
 			EnterAlternateScreen,
 			DisableLineWrap,
 			SetBackgroundColor(Color::Black),
+			Hide,
 			Clear(ClearType::All),
 		)?;
 		Ok(Self)
@@ -51,6 +53,10 @@ impl Console {
 		).expect("moveto, set_x_color, print");
 	}
 	pub fn flush(&mut self) {
+		queue!(
+			stdout(),
+			MoveTo(0,0)
+		).expect("move-to 0,0");
 		stdout().flush().expect("flush");
 	}
 	pub fn _print(&self, msg: &str) {
