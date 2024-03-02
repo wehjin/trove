@@ -1,19 +1,24 @@
 use std::collections::HashMap;
+
 use crate::tools::frame::Frame;
 use crate::tools::UserEvent;
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct CaptorId(pub u64, pub usize);
+
 pub struct Captor<Msg> {
+	pub id: CaptorId,
 	pub event_map: HashMap<UserEvent, Msg>,
 	pub frame: Frame,
 }
 
 impl<Msg> Captor<Msg> {
 	pub fn map_msg<WrapMsg>(self, map_msg: impl Fn(Msg) -> WrapMsg) -> Captor<WrapMsg> {
-		let Captor { event_map, frame } = self;
+		let Captor { id, event_map, frame } = self;
 		let event_map = event_map.into_iter().map(|(event, msg)| {
 			(event, map_msg(msg))
 		}).collect::<HashMap<_, _>>();
-		Captor { event_map, frame }
+		Captor { id, event_map, frame }
 	}
 }
 

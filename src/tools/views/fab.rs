@@ -2,8 +2,10 @@ use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
+use rand::random;
+
 use crate::tools::{Cmd, solar_dark, UserEvent};
-use crate::tools::captor::Captor;
+use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
 
@@ -11,12 +13,6 @@ use crate::tools::frame::Frame;
 pub enum FabMsg {
 	Press,
 	Release,
-}
-
-#[derive(Debug, Default)]
-pub struct Fab {
-	pub label: String,
-	pub pressed: bool,
 }
 
 pub fn timer_cmd<T: Send + Sync + 'static>(millis: u64, msg: T) -> Cmd<T> {
@@ -29,6 +25,19 @@ pub fn timer_cmd<T: Send + Sync + 'static>(millis: u64, msg: T) -> Cmd<T> {
 pub enum JustClicked {
 	Yes,
 	No(Cmd<FabMsg>),
+}
+
+#[derive(Debug)]
+pub struct Fab {
+	pub id: u64,
+	pub label: String,
+	pub pressed: bool,
+}
+
+impl Default for Fab {
+	fn default() -> Self {
+		Fab { id: random(), label: "".to_string(), pressed: false }
+	}
 }
 
 impl Fab {
@@ -57,7 +66,7 @@ impl Fab {
 			let mut event_map = HashMap::new();
 			event_map.insert(UserEvent::Select, FabMsg::Press);
 			let frame = edge_frame;
-			vec![Captor { event_map, frame }]
+			vec![Captor { id: CaptorId(self.id, 0), event_map, frame }]
 		};
 		(fills, captors)
 	}

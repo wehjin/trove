@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::error::Error;
 use std::sync::mpsc::{channel, Sender};
 use std::thread;
@@ -7,6 +8,7 @@ use crossterm::event::{Event, KeyCode};
 use tools::console::Console;
 use tools::screen::Screen;
 
+use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::sample::{SampleApp, SampleAppMsg};
 use crate::tools::UserEvent;
 
@@ -33,21 +35,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 			process.send(msg).expect("send process msg");
 		}
 	});
+	let mut active_captor_id: Option<CaptorId> = None;
 	loop {
 		let mut screen = Screen::new(console.width_height());
 		let (fills, captors) = app.get_fills_captors(screen.to_frame());
+		let captors = captors.into_iter().map(|it| (it.id, it)).collect::<HashMap<_, _>>();
+		if let Some(captor_id) = captors.keys().next() {
+			active_captor_id = Some(*captor_id);
+		}
 		screen.add_fills(fills);
 		screen.print_to(&mut console);
 		match recv_process.recv()? {
 			ProcessMsg::User(user_event) => {
 				match user_event {
 					UserEvent::Select => {
-						// TODO Impl better policy. Rudimentary policy works only for this specific case.
-						for captor in &captors {
-							if let Some(msg) = captor.get_msg(user_event) {
-								send_process.send(ProcessMsg::Internal(msg)).expect("can send process msg");
-								break;
-							}
+						if let Some(msg) = get_user_event_msg(user_event, &active_captor_id, captors) {
+							send_process.send(ProcessMsg::Internal(msg)).expect("can send process msg");
 						}
 					}
 					UserEvent::Quit => break,
@@ -63,6 +66,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 		}
 	}
 	Ok(())
+}
+
+fn get_user_event_msg(user_event: UserEvent, active_captor_id: &Option<CaptorId>, captors: HashMap<CaptorId, Captor<SampleAppMsg>>) -> Option<SampleAppMsg> {
+	let update_msg = active_captor_id
+		.map(|id| captors.get(&id)).flatten()
+		.map(|captor| captor.get_msg(user_event)).flatten();
+	update_msg
 }
 
 fn read_keyboard(process: Sender<ProcessMsg>) -> Result<(), Box<dyn Error + Send + Sync>> {
