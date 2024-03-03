@@ -148,22 +148,18 @@ impl SampleApp {
 		}
 	}
 	pub fn update(&mut self, msg: SampleAppMsg) -> Cmd<SampleAppMsg> {
-		eprintln!("BEFORE_UPDATE: {:?}", self.cursor_position);
 		match msg {
 			ForFab(msg) => match self.fab.update(msg) {
 				JustClicked::Yes => {
 					self.asset_list.push(Asset::new(self.asset_list.len() + 1));
 					self.cursor_position.set_len_show_last(self.asset_list.len());
-					eprintln!("AFTER FOR_FAB, JUST_CLICKED: {:?}", self.cursor_position);
 					Cmd::None
 				}
 				JustClicked::No(cmd) => {
-					eprintln!("AFTER FOR_FAB, NOT_CLICKED: {:?}", self.cursor_position);
 					cmd.map(ForFab)
 				}
 			},
 			SetFocus(CaptorId(_group, index)) => {
-				eprintln!("SetFocus: {}", index);
 				self.cursor_position.set_cursor_index(index);
 				Cmd::None
 			}
@@ -194,7 +190,6 @@ impl SampleApp {
 			vec![]
 		};
 		let (list_fills, list_captors) = {
-			eprintln!("body-frame: {:?}", body_frame);
 			let (mut fills, mut captors) = (Vec::new(), Vec::new());
 			for item_index in 0..self.asset_list.len() {
 				let (item_row, kind) = self.cursor_position.get_item_row_and_kind(item_index);
