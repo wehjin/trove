@@ -13,6 +13,7 @@ use crate::tools::frame::Frame;
 pub enum FabMsg {
 	Press,
 	Release,
+	Ignore,
 }
 
 pub fn timer_cmd<T: Send + Sync + 'static>(millis: u64, msg: T) -> Cmd<T> {
@@ -32,11 +33,17 @@ pub struct Fab {
 	pub id: u64,
 	pub label: String,
 	pub pressed: bool,
+	pub edge_frame: Frame,
 }
 
 impl Default for Fab {
 	fn default() -> Self {
-		Fab { id: random(), label: "".to_string(), pressed: false }
+		Fab {
+			id: random(),
+			label: "".to_string(),
+			pressed: false,
+			edge_frame: Frame::default(),
+		}
 	}
 }
 
@@ -54,19 +61,27 @@ impl Fab {
 			_ => JustClicked::No(Cmd::None)
 		}
 	}
-	pub fn get_fills_captors(&self, edge_frame: Frame) -> (Vec<Fill>, Vec<Captor<FabMsg>>) {
+	pub fn set_edge_frame(&mut self, edge_frame: Frame) -> i16 {
+		self.edge_frame = edge_frame;
+		edge_frame.z + 5
+	}
+	pub fn get_fills_captors(&self, active_captor_id: Option<CaptorId>) -> (Vec<Fill>, Vec<Captor<FabMsg>>) {
+		let captor_id = CaptorId(self.id, 0);
 		let (back_color, label_color) = match self.pressed {
-			false => (solar_dark::BASE3, solar_dark::BASE00),
-			true => (solar_dark::BASE1, solar_dark::BASE02),
+			true => (solar_dark::BASE3, solar_dark::BASE00),
+			false => match active_captor_id == Some(captor_id) {
+				true => (solar_dark::BASE2, solar_dark::BASE01),
+				false => (solar_dark::BASE02, solar_dark::BASE1),
+			}
 		};
-		let back_fill = vec![Fill::color_tile(edge_frame, back_color)];
-		let label_fills = string_to_fills(self.label.as_str(), edge_frame.move_closer(1), label_color);
+		let back_fill = vec![Fill::color_tile(self.edge_frame, back_color)];
+		let label_fills = string_to_fills(self.label.as_str(), self.edge_frame.move_closer(1), label_color);
 		let fills = vec![back_fill, label_fills].into_iter().flatten().collect::<Vec<_>>();
 		let captors = {
 			let mut event_map = HashMap::new();
 			event_map.insert(UserEvent::Select, FabMsg::Press);
-			let frame = edge_frame;
-			vec![Captor { id: CaptorId(self.id, 0), event_map, frame }]
+			let frame = self.edge_frame;
+			vec![Captor { id: captor_id, event_map, frame, pre_focus_msg: FabMsg::Ignore }]
 		};
 		(fills, captors)
 	}

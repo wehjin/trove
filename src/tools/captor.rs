@@ -6,19 +6,25 @@ use crate::tools::UserEvent;
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct CaptorId(pub u64, pub usize);
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Captor<Msg> {
 	pub id: CaptorId,
 	pub event_map: HashMap<UserEvent, Msg>,
 	pub frame: Frame,
+	pub pre_focus_msg: Msg,
 }
 
 impl<Msg> Captor<Msg> {
 	pub fn map_msg<WrapMsg>(self, map_msg: impl Fn(Msg) -> WrapMsg) -> Captor<WrapMsg> {
-		let Captor { id, event_map, frame } = self;
-		let event_map = event_map.into_iter().map(|(event, msg)| {
-			(event, map_msg(msg))
-		}).collect::<HashMap<_, _>>();
-		Captor { id, event_map, frame }
+		Captor {
+			id: self.id,
+			event_map: self.event_map
+				.into_iter()
+				.map(|(event, msg)| (event, map_msg(msg)))
+				.collect(),
+			frame: self.frame,
+			pre_focus_msg: map_msg(self.pre_focus_msg),
+		}
 	}
 }
 

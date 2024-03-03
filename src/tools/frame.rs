@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use crate::tools::inset::Inset;
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Default)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Default)]
 pub struct Frame {
 	pub left: i16,
 	pub right: i16,
@@ -28,6 +28,9 @@ impl Frame {
 		let bottom = Frame { top: split, ..self.clone() };
 		self.bottom = split;
 		(self, bottom)
+	}
+	pub fn into_single_row_full_width_at_top(self, top_row: i16) -> Frame {
+		Frame { top: top_row, bottom: top_row + 1, ..self }
 	}
 
 	pub fn into_single_row_full_width_shift_rows_down(self, rows: u16) -> Frame {
@@ -76,4 +79,27 @@ impl Frame {
 	}
 	pub fn col_range(&self) -> Range<i16> { self.left..self.right }
 	pub fn row_range(&self) -> Range<i16> { self.top..self.bottom }
+
+	pub fn get_row_kind(&self, row: i16) -> RowKind {
+		if row < (self.top - 1) {
+			RowKind::Above
+		} else if row == (self.top - 1) {
+			RowKind::TopRail
+		} else if row < self.bottom {
+			RowKind::Interior
+		} else if row == self.bottom {
+			RowKind::BottomRail
+		} else {
+			RowKind::Below
+		}
+	}
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum RowKind {
+	Above,
+	TopRail,
+	Interior,
+	BottomRail,
+	Below,
 }
