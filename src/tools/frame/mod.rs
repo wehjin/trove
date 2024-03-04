@@ -2,6 +2,8 @@ use std::ops::Range;
 
 use crate::tools::inset::Inset;
 
+pub mod layout;
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Default)]
 pub struct Frame {
 	pub left: i16,

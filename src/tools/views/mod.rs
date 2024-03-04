@@ -3,7 +3,6 @@ use crate::tools::fill::Fill;
 use crate::tools::frame::Frame;
 
 pub mod fab;
-
 pub trait View {
 	type Msg: Send + Sync + 'static;
 	fn update(&mut self, msg: Self::Msg);

@@ -8,6 +8,7 @@ use crate::tools::{Cmd, solar_dark};
 use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::{Frame, RowKind};
+use crate::tools::frame::layout::Layout;
 use crate::tools::inset::Inset;
 use crate::tools::sample::SampleAppMsg::ForFab;
 use crate::tools::views::fab::{Fab, FabMsg, JustClicked};
@@ -166,8 +167,12 @@ impl SampleApp {
 		}
 	}
 	pub fn set_edge_frame(&mut self, edge_frame: Frame) -> i16 {
-		let edge_frame = edge_frame.inset(Inset::DoubleCols(1)).move_closer(1);
-		(self.title_frame, self.body_frame) = edge_frame.split_from_top(1);
+		Layout::new(edge_frame)
+			.inset(Inset::DoubleCols(1))
+			.move_closer(1)
+			.split_top(1).take(&mut self.title_frame)
+			.take(&mut self.body_frame)
+		;
 		self.cursor_position.set_frame(self.body_frame);
 		let z_max = edge_frame.z + 5;
 		let fab_frame = self.body_frame.into_single_row_fixed_width_at_offset_from_bottom_right(self.fab.min_width_height().0, 2, 1).move_closer(1);
