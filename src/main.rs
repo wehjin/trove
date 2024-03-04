@@ -12,6 +12,7 @@ use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::sample::{SampleApp, SampleAppMsg};
 use crate::tools::UserEvent;
 
+pub mod data;
 pub mod tools;
 
 #[derive(Debug)]
