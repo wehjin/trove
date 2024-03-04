@@ -116,7 +116,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 				return Err(err);
 			}
 			ProcessMsg::Internal(app_msg) => {
-				let cmd = app.update(app_msg);
+				let cmd = app.update_with_effects(app_msg);
 				cmd.map(ProcessMsg::Internal).process(send_process.clone());
 			}
 		}
