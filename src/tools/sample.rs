@@ -10,7 +10,7 @@ use crate::tools::inset::Inset;
 use crate::tools::sample::SampleAppMsg::{ForFab, ForScrollList};
 use crate::tools::views::EdgeHolder;
 use crate::tools::views::fab::{Fab, FabMsg, JustClicked};
-use crate::tools::views::scroll_list::{ScrollList, ScrollListMsg};
+use crate::tools::views::scroll_list::{JustSelected, ScrollList, ScrollListMsg};
 
 #[derive(Copy, Clone, Debug)]
 pub enum SampleAppMsg {
@@ -52,7 +52,11 @@ impl SampleApp {
 				JustClicked::No(cmd) => cmd.map(ForFab),
 			},
 			ForScrollList(msg) => {
-				self.scroll_list.update(msg);
+				let row_selected = self.scroll_list.update_with_event(msg);
+				match row_selected {
+					JustSelected::None => {}
+					JustSelected::Row(_index) => {}
+				}
 				Cmd::None
 			}
 		}

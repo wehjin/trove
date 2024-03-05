@@ -1,7 +1,8 @@
 use rand::random;
+
 use crate::tools::views::scroll_list::ScrollListRowDisplay;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum AssetKind {
 	Commodity,
 	Stock,
@@ -18,6 +19,7 @@ impl AssetKind {
 	}
 }
 
+#[derive(Debug, Clone)]
 pub struct Asset {
 	name: String,
 	kind: AssetKind,

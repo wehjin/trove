@@ -2,13 +2,11 @@ use std::collections::HashMap;
 
 use rand::random;
 
-use ScrollListMsg::SetFocus;
-
+use crate::tools::{solar_dark, UserEvent};
 use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::{Frame, RowKind};
 use crate::tools::inset::Inset;
-use crate::tools::solar_dark;
 use crate::tools::views::{EdgeHolder, ZMax};
 
 pub struct ScrollListRowDisplay {
@@ -17,9 +15,16 @@ pub struct ScrollListRowDisplay {
 	pub col3: String,
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum JustSelected {
+	None,
+	Row(usize),
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ScrollListMsg {
 	SetFocus(CaptorId),
+	Select(usize),
 }
 
 pub struct ScrollList {
@@ -27,6 +32,7 @@ pub struct ScrollList {
 	rows: Vec<ScrollListRowDisplay>,
 	frame: Frame,
 	cursor_position: CursorPosition,
+	selected_index: Option<usize>,
 }
 
 impl ScrollList {
@@ -36,11 +42,20 @@ impl ScrollList {
 			rows,
 			frame: Frame::default(),
 			cursor_position: CursorPosition::new(0),
+			selected_index: None,
 		}
 	}
-	pub fn update(&mut self, msg: ScrollListMsg) {
+	#[must_use]
+	pub fn update_with_event(&mut self, msg: ScrollListMsg) -> JustSelected {
 		match msg {
-			SetFocus(CaptorId(_group, index)) => self.set_focus(index),
+			ScrollListMsg::SetFocus(CaptorId(_group, index)) => {
+				self.set_focus(index);
+				JustSelected::None
+			}
+			ScrollListMsg::Select(index) => {
+				self.selected_index = Some(index);
+				JustSelected::Row(index)
+			}
 		}
 	}
 }
@@ -59,47 +74,65 @@ impl ScrollList {
 		let (mut fills, mut captors) = (Vec::new(), Vec::new());
 		for item_index in 0..self.rows.len() {
 			let (item_row, kind) = self.cursor_position.get_item_row_and_kind(item_index);
-			let item_frame = self.frame
+			let captor_frame = self.frame
 				.inset(Inset::Cols(1))
 				.into_single_row_full_width_at_top(item_row)
 				.move_closer(1);
-			let item_captor_id = CaptorId(self.id, item_index);
+			let captor_id = CaptorId(self.id, item_index);
 			match kind {
 				RowKind::TopRail | RowKind::Interior | RowKind::BottomRail => {
+					let mut captor_event_map = HashMap::new();
+					if kind == RowKind::Interior {
+						captor_event_map.insert(UserEvent::Select, ScrollListMsg::Select(item_index));
+					}
 					let captor = Captor {
-						id: item_captor_id,
-						event_map: HashMap::new(),
-						frame: item_frame,
-						pre_focus_msg: SetFocus(item_captor_id),
+						id: captor_id,
+						event_map: captor_event_map,
+						frame: captor_frame,
+						pre_focus_msg: ScrollListMsg::SetFocus(captor_id),
 					};
 					captors.push(captor);
 				}
 				_ => {}
 			}
 			if let RowKind::Interior = kind {
-				let item_has_focus = active_captor_id == Some(item_captor_id);
-				let item_fills = Self::get_item_fills(&self.rows[item_index], item_frame, item_has_focus);
+				let item_fills = Self::get_item_fills(
+					&self.rows[item_index],
+					captor_frame,
+					active_captor_id == Some(captor_id),
+					Some(item_index) == self.selected_index,
+				);
 				fills.extend(item_fills);
 			}
 		}
 		(fills, captors)
 	}
 
-	fn get_item_fills(row: &ScrollListRowDisplay, item_frame: Frame, with_focus: bool) -> Vec<Fill> {
+	fn get_item_fills(row: &ScrollListRowDisplay, item_frame: Frame, with_focus: bool, is_selected: bool) -> Vec<Fill> {
 		const TAB_STOPS: [u16; 3] = [20, 40, 60];
-		const NORMAL_PALETTE: usize = 0;
-		const FOCUS_PALETTE: usize = 1;
 		const NAME_COLOR: usize = 0;
 		const KIND_COLOR: usize = 1;
 		const SYMBOL_COLOR: usize = 2;
 		const BACKGROUND_COLOR: usize = 3;
-		const COLORS: [[usize; 4]; 2] = [
+		const NORMAL_PALETTE: usize = 0;
+		const SELECTED_PALETTE: usize = 1;
+		const NORMAL_FOCUS_PALETTE: usize = 2;
+		const SELECTED_FOCUS_PALETTE: usize = 3;
+		const COLORS: [[usize; 4]; 4] = [
+			// NORMAL
 			[solar_dark::BASE1, solar_dark::BASE0, solar_dark::BASE01, solar_dark::BASE03],
+			// SELECTED
+			[solar_dark::BASE2, solar_dark::BASE1, solar_dark::BASE00, solar_dark::BASE02],
+			// NORMAL_FOCUS
 			[solar_dark::BASE01, solar_dark::BASE00, solar_dark::BASE1, solar_dark::BASE3],
+			// SELECTED_FOCUS
+			[solar_dark::BASE02, solar_dark::BASE01, solar_dark::BASE0, solar_dark::BASE2],
 		];
-		let palette = match with_focus {
-			true => FOCUS_PALETTE,
-			false => NORMAL_PALETTE
+		let palette = match (with_focus, is_selected) {
+			(false, false) => NORMAL_PALETTE,
+			(false, true) => SELECTED_PALETTE,
+			(true, false) => NORMAL_FOCUS_PALETTE,
+			(true, true) => SELECTED_FOCUS_PALETTE,
 		};
 		let mut fills = Vec::new();
 		let background_frame = item_frame;
