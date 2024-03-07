@@ -7,11 +7,13 @@ use crate::tools::frame::Frame;
 pub mod fab;
 pub mod scroll_list;
 
+#[must_use]
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct ZMax(i16);
+pub struct ZMax(pub i16);
 
 impl ZMax {
 	pub fn z(&self) -> i16 { self.0 }
+	pub fn max(self, other: ZMax) -> Self { ZMax(self.0.max(other.0)) }
 }
 
 impl Add<usize> for ZMax {
@@ -20,8 +22,8 @@ impl Add<usize> for ZMax {
 	fn add(self, rhs: usize) -> Self::Output { ZMax(self.0 + rhs as i16) }
 }
 
-pub trait EdgeHolder {
-	fn set_edge(&mut self, frame: Frame) -> ZMax;
+pub trait Shaper {
+	fn shape(&mut self, edge_frame: Frame) -> ZMax;
 }
 
 pub trait View {

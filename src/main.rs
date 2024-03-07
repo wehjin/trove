@@ -11,6 +11,7 @@ use tools::screen::Screen;
 use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::sample::{SampleApp, SampleAppMsg};
 use crate::tools::UserEvent;
+use crate::tools::views::Shaper;
 
 pub mod data;
 pub mod tools;
@@ -39,7 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	let mut active_captor_id: Option<CaptorId> = None;
 	loop {
 		let mut screen = Screen::new(console.width_height());
-		app.set_edge_frame(screen.to_frame());
+		let _ = app.shape(screen.to_frame());
 		let (screen_fills, ready_captors);
 		loop {
 			let (fills, captors) = app.get_fills_captors(active_captor_id);

@@ -8,6 +8,7 @@ use crate::tools::{Cmd, solar_dark, UserEvent};
 use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
+use crate::tools::views::{Shaper, ZMax};
 
 #[derive(Debug, Copy, Clone)]
 pub enum FabMsg {
@@ -61,10 +62,6 @@ impl Fab {
 			_ => JustClicked::No(Cmd::None)
 		}
 	}
-	pub fn set_edge_frame(&mut self, edge_frame: Frame) -> i16 {
-		self.edge_frame = edge_frame;
-		edge_frame.z + 5
-	}
 	pub fn get_fills_captors(&self, active_captor_id: Option<CaptorId>) -> (Vec<Fill>, Vec<Captor<FabMsg>>) {
 		let captor_id = CaptorId(self.id, 0);
 		let (back_color, label_color) = match self.pressed {
@@ -90,5 +87,12 @@ impl Fab {
 	pub fn min_width_height(&self) -> (u16, u16) {
 		let min_cols = self.label.as_str().chars().count().max(3) as u16;
 		(min_cols, 1)
+	}
+}
+
+impl Shaper for Fab {
+	fn shape(&mut self, frame: Frame) -> ZMax {
+		self.edge_frame = frame;
+		ZMax(frame.z + 5)
 	}
 }

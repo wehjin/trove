@@ -3,12 +3,12 @@ use rand::random;
 use crate::data::Asset;
 use crate::tools::{Cmd, solar_dark};
 use crate::tools::captor::{Captor, CaptorId};
-use crate::tools::fill::{Fill, string_to_fills};
+use crate::tools::fill::{Fill, Glyph, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::frame::layout::Layout;
 use crate::tools::inset::Inset;
 use crate::tools::sample::SampleAppMsg::{ForFab, ForScrollList};
-use crate::tools::views::EdgeHolder;
+use crate::tools::views::{Shaper, ZMax};
 use crate::tools::views::fab::{Fab, FabMsg, JustClicked};
 use crate::tools::views::scroll_list::{JustSelected, ScrollList, ScrollListMsg};
 
@@ -21,22 +21,25 @@ pub enum SampleAppMsg {
 pub struct SampleApp {
 	pub id: u64,
 	pub asset_list: Vec<Asset>,
+	pub selected_asset: Option<usize>,
 	pub scroll_list: ScrollList,
 	pub fab: Fab,
 	pub title_frame: Frame,
-	pub body_frame: Frame,
+	pub list_frame: Frame,
+	pub detail_frame: Frame,
 }
-
 
 impl SampleApp {
 	pub fn new() -> Self {
 		Self {
 			id: random(),
 			asset_list: vec![],
+			selected_asset: None,
 			scroll_list: ScrollList::new(vec![]),
 			fab: Fab { label: " [+] ".to_string(), ..Fab::default() },
 			title_frame: Frame::default(),
-			body_frame: Frame::default(),
+			list_frame: Frame::default(),
+			detail_frame: Frame::default(),
 		}
 	}
 	pub fn update_with_effects(&mut self, msg: SampleAppMsg) -> Cmd<SampleAppMsg> {
@@ -55,29 +58,18 @@ impl SampleApp {
 				let row_selected = self.scroll_list.update_with_event(msg);
 				match row_selected {
 					JustSelected::None => {}
-					JustSelected::Row(_index) => {}
+					JustSelected::Row(index) => {
+						self.selected_asset = Some(index);
+					}
 				}
 				Cmd::None
 			}
 		}
 	}
-	pub fn set_edge_frame(&mut self, edge_frame: Frame) -> i16 {
-		Layout::new(edge_frame)
-			.inset(Inset::DoubleCols(1))
-			.move_closer(1)
-			.split_top(1).take(&mut self.title_frame)
-			.take(&mut self.body_frame)
-		;
-		let z_max = self.scroll_list.set_edge(self.body_frame);
-		let z_max = (z_max + 5).z();
-		let fab_frame = self.body_frame.into_single_row_fixed_width_at_offset_from_bottom_right(self.fab.min_width_height().0, 2, 1).move_closer(1);
-		let fab_z_max = self.fab.set_edge_frame(fab_frame);
-		z_max.max(fab_z_max)
-	}
 	pub fn get_fills_captors(&self, active_captor_id: Option<CaptorId>) -> (Vec<Fill>, Vec<Captor<SampleAppMsg>>) {
 		const EMPTY_TEXT: &str = "Empty in assets";
 		let title_frame = self.title_frame;
-		let body_frame = self.body_frame;
+		let body_frame = self.list_frame;
 		let title_body_fills = vec![
 			Fill::color_tile(title_frame, solar_dark::BASE02),
 			Fill::color_tile(body_frame, solar_dark::BASE03),
@@ -99,17 +91,43 @@ impl SampleApp {
 			.into_iter()
 			.map(|it| it.map_msg(ForFab))
 			.collect::<Vec<_>>();
+		let detail_fills = vec![Fill {
+			glyph: Glyph::Tile(solar_dark::BASE02),
+			frame: self.detail_frame,
+		}];
 		let fills = vec![
 			title_body_fills,
 			title_fills,
 			empty_text_fills,
 			list_fills,
 			fab_fills,
+			detail_fills,
 		].into_iter().flatten().collect::<Vec<_>>();
 		let captors = vec![
 			list_captors,
 			fab_captors,
 		].into_iter().flatten().collect();
 		(fills, captors)
+	}
+}
+
+impl Shaper for SampleApp {
+	fn shape(&mut self, frame: Frame) -> ZMax {
+		let side_cols = match self.selected_asset {
+			None => 0,
+			Some(_index) => 40u16,
+		};
+		let z_max = Layout::new(frame)
+			.inset(Inset::DoubleCols(1))
+			.move_closer(1)
+			.split_top(1).take(&mut self.title_frame)
+			.split_right(side_cols)
+			.move_closer(1)
+			.take(&mut self.detail_frame)
+			.shape(&mut self.scroll_list)
+			.take(&mut self.list_frame)
+			.into_z_max();
+		let fab_frame = self.list_frame.into_single_row_fixed_width_at_offset_from_bottom_right(self.fab.min_width_height().0, 2, 1).move_closer(1);
+		z_max.max(self.fab.shape(fab_frame))
 	}
 }

@@ -7,7 +7,7 @@ use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::{Frame, RowKind};
 use crate::tools::inset::Inset;
-use crate::tools::views::{EdgeHolder, ZMax};
+use crate::tools::views::{Shaper, ZMax};
 
 pub struct ScrollListRowDisplay {
 	pub col1: String,
@@ -35,6 +35,15 @@ pub struct ScrollList {
 	selected_index: Option<usize>,
 }
 
+impl Shaper for ScrollList {
+	fn shape(&mut self, frame: Frame) -> ZMax {
+		self.frame = frame;
+		self.cursor_position.set_frame(frame);
+		// TODO ZMax should include z of rows.
+		ZMax(frame.z)
+	}
+}
+
 impl ScrollList {
 	pub fn new(rows: Vec<ScrollListRowDisplay>) -> Self {
 		Self {
@@ -57,15 +66,6 @@ impl ScrollList {
 				JustSelected::Row(index)
 			}
 		}
-	}
-}
-
-impl EdgeHolder for ScrollList {
-	fn set_edge(&mut self, frame: Frame) -> ZMax {
-		self.frame = frame;
-		self.cursor_position.set_frame(frame);
-		// TODO ZMax should include z of rows.
-		ZMax(frame.z)
 	}
 }
 

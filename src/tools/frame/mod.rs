@@ -31,6 +31,12 @@ impl Frame {
 		self.bottom = split;
 		(self, bottom)
 	}
+	pub fn split_from_right(mut self, cols: u16) -> (Frame, Frame) {
+		let split = self.right - cols as i16;
+		let left_frame = Frame { right: split, ..self.clone() };
+		self.left = split;
+		(self, left_frame)
+	}
 	pub fn into_single_row_full_width_at_top(self, top_row: i16) -> Frame {
 		Frame { top: top_row, bottom: top_row + 1, ..self }
 	}
