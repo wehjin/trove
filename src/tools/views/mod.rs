@@ -22,7 +22,12 @@ impl Add<usize> for ZMax {
 	fn add(self, rhs: usize) -> Self::Output { ZMax(self.0 + rhs as i16) }
 }
 
-pub trait Shaper {
+pub trait Updating {
+	type Msg;
+	fn update(&mut self, msg: Self::Msg);
+}
+
+pub trait Shaping {
 	fn shape(&mut self, edge_frame: Frame) -> ZMax;
 }
 

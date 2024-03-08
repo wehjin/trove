@@ -7,7 +7,7 @@ use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::{Frame, RowKind};
 use crate::tools::inset::Inset;
-use crate::tools::views::{Shaper, ZMax};
+use crate::tools::views::{Shaping, ZMax};
 
 pub struct ScrollListRowDisplay {
 	pub col1: String,
@@ -160,7 +160,7 @@ impl ScrollList {
 	}
 }
 
-impl Shaper for ScrollList {
+impl Shaping for ScrollList {
 	fn shape(&mut self, frame: Frame) -> ZMax {
 		self.frame = frame;
 		self.cursor_position.set_frame(frame);

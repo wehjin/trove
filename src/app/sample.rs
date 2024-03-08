@@ -1,6 +1,6 @@
 use rand::random;
 
-use crate::app::details::Details;
+use crate::app::details::{Details, SetAsset};
 use crate::app::sample::SampleAppMsg::{ForFab, ForScrollList};
 use crate::data::Asset;
 use crate::tools::{Cmd, solar_dark};
@@ -9,7 +9,7 @@ use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::frame::layout::Layout;
 use crate::tools::inset::Inset;
-use crate::tools::views::{Shaper, ZMax};
+use crate::tools::views::{Shaping, Updating, ZMax};
 use crate::tools::views::fab::{Fab, FabMsg, JustClicked};
 use crate::tools::views::scroll_list::{JustSelected, ScrollList, ScrollListMsg};
 
@@ -61,6 +61,7 @@ impl SampleApp {
 					JustSelected::None => {}
 					JustSelected::Row(index) => {
 						self.selected_asset = Some(index);
+						self.details.update(SetAsset(self.asset_list[index].clone()))
 					}
 				}
 				Cmd::None
@@ -109,11 +110,11 @@ impl SampleApp {
 	}
 }
 
-impl Shaper for SampleApp {
+impl Shaping for SampleApp {
 	fn shape(&mut self, frame: Frame) -> ZMax {
 		let side_cols = match self.selected_asset {
 			None => 0,
-			Some(_index) => 40u16,
+			Some(_index) => frame.width() as u16 / 2,
 		};
 		let z_max = Layout::new(frame)
 			.inset(Inset::DoubleCols(1))

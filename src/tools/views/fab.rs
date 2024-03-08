@@ -8,7 +8,7 @@ use crate::tools::{Cmd, solar_dark, UserEvent};
 use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
-use crate::tools::views::{Shaper, ZMax};
+use crate::tools::views::{Shaping, ZMax};
 
 #[derive(Debug, Copy, Clone)]
 pub enum FabMsg {
@@ -90,7 +90,7 @@ impl Fab {
 	}
 }
 
-impl Shaper for Fab {
+impl Shaping for Fab {
 	fn shape(&mut self, frame: Frame) -> ZMax {
 		self.edge_frame = frame;
 		ZMax(frame.z + 5)

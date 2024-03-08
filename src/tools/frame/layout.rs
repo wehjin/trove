@@ -1,6 +1,6 @@
 use crate::tools::frame::Frame;
 use crate::tools::inset::Inset;
-use crate::tools::views::{Shaper, ZMax};
+use crate::tools::views::{Shaping, ZMax};
 
 pub struct Layout {
 	todo: Vec<Frame>,
@@ -44,7 +44,7 @@ impl Layout {
 		self.todo.push(right);
 		self
 	}
-	pub fn shape(mut self, shaper: &mut impl Shaper) -> Self {
+	pub fn shape(mut self, shaper: &mut impl Shaping) -> Self {
 		let frame = self.pop_todo();
 		self.z_max = self.z_max.max(shaper.shape(frame));
 		self.todo.push(frame);

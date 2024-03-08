@@ -11,7 +11,7 @@ use tools::screen::Screen;
 use crate::app::sample::{SampleApp, SampleAppMsg};
 use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::UserEvent;
-use crate::tools::views::Shaper;
+use crate::tools::views::Shaping;
 
 pub mod app;
 pub mod data;

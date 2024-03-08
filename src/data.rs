@@ -21,9 +21,9 @@ impl AssetKind {
 
 #[derive(Debug, Clone)]
 pub struct Asset {
-	name: String,
-	kind: AssetKind,
-	symbol: String,
+	pub name: String,
+	pub kind: AssetKind,
+	pub symbol: String,
 }
 
 impl Asset {
