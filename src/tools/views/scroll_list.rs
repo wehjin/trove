@@ -35,15 +35,6 @@ pub struct ScrollList {
 	selected_index: Option<usize>,
 }
 
-impl Shaper for ScrollList {
-	fn shape(&mut self, frame: Frame) -> ZMax {
-		self.frame = frame;
-		self.cursor_position.set_frame(frame);
-		// TODO ZMax should include z of rows.
-		ZMax(frame.z)
-	}
-}
-
 impl ScrollList {
 	pub fn new(rows: Vec<ScrollListRowDisplay>) -> Self {
 		Self {
@@ -166,6 +157,15 @@ impl ScrollList {
 	}
 	pub fn set_focus(&mut self, index: usize) {
 		self.cursor_position.set_cursor_index(index);
+	}
+}
+
+impl Shaper for ScrollList {
+	fn shape(&mut self, frame: Frame) -> ZMax {
+		self.frame = frame;
+		self.cursor_position.set_frame(frame);
+		// TODO ZMax should include z of rows.
+		ZMax(frame.z)
 	}
 }
 

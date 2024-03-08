@@ -8,11 +8,12 @@ use crossterm::event::{Event, KeyCode, KeyModifiers};
 use tools::console::Console;
 use tools::screen::Screen;
 
+use crate::app::sample::{SampleApp, SampleAppMsg};
 use crate::tools::captor::{Captor, CaptorId};
-use crate::tools::sample::{SampleApp, SampleAppMsg};
 use crate::tools::UserEvent;
 use crate::tools::views::Shaper;
 
+pub mod app;
 pub mod data;
 pub mod tools;
 

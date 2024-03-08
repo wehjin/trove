@@ -1,13 +1,14 @@
 use rand::random;
 
+use crate::app::details::Details;
+use crate::app::sample::SampleAppMsg::{ForFab, ForScrollList};
 use crate::data::Asset;
 use crate::tools::{Cmd, solar_dark};
 use crate::tools::captor::{Captor, CaptorId};
-use crate::tools::fill::{Fill, Glyph, string_to_fills};
+use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::frame::layout::Layout;
 use crate::tools::inset::Inset;
-use crate::tools::sample::SampleAppMsg::{ForFab, ForScrollList};
 use crate::tools::views::{Shaper, ZMax};
 use crate::tools::views::fab::{Fab, FabMsg, JustClicked};
 use crate::tools::views::scroll_list::{JustSelected, ScrollList, ScrollListMsg};
@@ -24,9 +25,9 @@ pub struct SampleApp {
 	pub selected_asset: Option<usize>,
 	pub scroll_list: ScrollList,
 	pub fab: Fab,
+	pub details: Details,
 	pub title_frame: Frame,
 	pub list_frame: Frame,
-	pub detail_frame: Frame,
 }
 
 impl SampleApp {
@@ -37,9 +38,9 @@ impl SampleApp {
 			selected_asset: None,
 			scroll_list: ScrollList::new(vec![]),
 			fab: Fab { label: " [+] ".to_string(), ..Fab::default() },
+			details: Details::default(),
 			title_frame: Frame::default(),
 			list_frame: Frame::default(),
-			detail_frame: Frame::default(),
 		}
 	}
 	pub fn update_with_effects(&mut self, msg: SampleAppMsg) -> Cmd<SampleAppMsg> {
@@ -91,10 +92,7 @@ impl SampleApp {
 			.into_iter()
 			.map(|it| it.map_msg(ForFab))
 			.collect::<Vec<_>>();
-		let detail_fills = vec![Fill {
-			glyph: Glyph::Tile(solar_dark::BASE02),
-			frame: self.detail_frame,
-		}];
+		let detail_fills = self.details.get_fills(active_captor_id);
 		let fills = vec![
 			title_body_fills,
 			title_fills,
@@ -121,9 +119,7 @@ impl Shaper for SampleApp {
 			.inset(Inset::DoubleCols(1))
 			.move_closer(1)
 			.split_top(1).take(&mut self.title_frame)
-			.split_right(side_cols)
-			.move_closer(1)
-			.take(&mut self.detail_frame)
+			.split_right(side_cols).move_closer(1).shape(&mut self.details).seal()
 			.shape(&mut self.scroll_list)
 			.take(&mut self.list_frame)
 			.into_z_max();
