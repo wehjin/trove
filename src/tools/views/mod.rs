@@ -6,6 +6,7 @@ use crate::tools::frame::Frame;
 
 pub mod fab;
 pub mod scroll_list;
+pub mod text_edit;
 
 #[must_use]
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
