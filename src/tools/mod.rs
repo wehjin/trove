@@ -5,6 +5,7 @@ use std::thread;
 #[allow(unused)]
 pub use crossterm::style::Color;
 
+pub mod beats;
 pub mod captor;
 pub mod console;
 pub mod fill;
