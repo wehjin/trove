@@ -46,7 +46,11 @@ impl<Msg: Send + Sync + 'static + Debug> Cmd<Msg> {
 pub enum UserEvent {
 	Quit,
 	Select,
+	FocusLeft,
+	FocusRight,
 	FocusUp,
 	FocusDown,
+	DeleteBack,
+	Char(char),
 }
 

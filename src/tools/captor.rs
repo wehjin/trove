@@ -28,10 +28,10 @@ impl<Msg> Captor<Msg> {
 	}
 }
 
-impl<Msg: Copy> Captor<Msg> {
+impl<Msg: Clone> Captor<Msg> {
 	pub fn get_msg(&self, key: UserEvent) -> Option<Msg> {
 		if let Some(msg) = self.event_map.get(&key) {
-			Some(*msg)
+			Some(msg.clone())
 		} else {
 			None
 		}

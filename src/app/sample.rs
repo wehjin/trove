@@ -1,7 +1,7 @@
 use rand::random;
 
-use crate::app::details::{Details, SetAsset};
-use crate::app::sample::SampleAppMsg::{ForFab, ForScrollList};
+use crate::app::details::{Details, DetailsMsg};
+use crate::app::sample::SampleAppMsg::{ForDetails, ForFab, ForScrollList};
 use crate::data::Asset;
 use crate::tools::{Cmd, solar_dark};
 use crate::tools::captor::{Captor, CaptorId};
@@ -9,14 +9,15 @@ use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::frame::layout::Layout;
 use crate::tools::inset::Inset;
-use crate::tools::views::{Shaping, Updating, ZMax};
+use crate::tools::views::{Shaping, Updating, Viewing, ZMax};
 use crate::tools::views::fab::{Fab, FabMsg, JustClicked};
 use crate::tools::views::scroll_list::{JustSelected, ScrollList, ScrollListMsg};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Debug, Clone)]
 pub enum SampleAppMsg {
 	ForFab(FabMsg),
 	ForScrollList(ScrollListMsg),
+	ForDetails(DetailsMsg),
 }
 
 pub struct SampleApp {
@@ -61,9 +62,13 @@ impl SampleApp {
 					JustSelected::None => {}
 					JustSelected::Row(index) => {
 						self.selected_asset = Some(index);
-						self.details.update(SetAsset(self.asset_list[index].clone()))
+						self.details.update(DetailsMsg::SetAsset(self.asset_list[index].clone()))
 					}
 				}
+				Cmd::None
+			}
+			ForDetails(msg) => {
+				self.details.update(msg);
 				Cmd::None
 			}
 		}
@@ -93,7 +98,11 @@ impl SampleApp {
 			.into_iter()
 			.map(|it| it.map_msg(ForFab))
 			.collect::<Vec<_>>();
-		let detail_fills = self.details.get_fills(active_captor_id);
+		let (detail_fills, detail_captors) = self.details.get_fills_captors(active_captor_id);
+		let detail_captors = detail_captors
+			.into_iter()
+			.map(|it| it.map_msg(ForDetails))
+			.collect::<Vec<_>>();
 		let fills = vec![
 			title_body_fills,
 			title_fills,
@@ -105,6 +114,7 @@ impl SampleApp {
 		let captors = vec![
 			list_captors,
 			fab_captors,
+			detail_captors,
 		].into_iter().flatten().collect();
 		(fills, captors)
 	}

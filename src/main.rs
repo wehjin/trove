@@ -80,9 +80,37 @@ fn main() -> Result<(), Box<dyn Error>> {
 			ProcessMsg::User(user_event) => {
 				match user_event {
 					UserEvent::Quit => break,
-					UserEvent::Select => {
+					UserEvent::Select | UserEvent::DeleteBack | UserEvent::Char(_) => {
 						if let Some(msg) = get_user_event_msg(user_event, &active_captor_id, ready_captors) {
 							send_process.send(ProcessMsg::Internal(msg)).expect("can send process msg");
+						}
+					}
+					UserEvent::FocusLeft => {
+						if let Some(old_captor) = active_captor_id.map(|it| ready_captors.get(&it)).flatten() {
+							let mut candidates = ready_captors.values()
+								.filter(|&captor| captor.frame.right <= old_captor.frame.left)
+								.collect::<Vec<_>>();
+							// TODO Do a better job selecting leftward captor.
+							if !candidates.is_empty() {
+								candidates.sort_by_key(|captor| -captor.frame.right);
+								let &next_captor = candidates.first().expect("leftward captor");
+								active_captor_id = Some(next_captor.id);
+								send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg.clone())).expect("can send process msg");
+							}
+						}
+					}
+					UserEvent::FocusRight => {
+						if let Some(old_captor) = active_captor_id.map(|it| ready_captors.get(&it)).flatten() {
+							let mut candidates = ready_captors.values()
+								.filter(|&captor| captor.frame.left >= old_captor.frame.right)
+								.collect::<Vec<_>>();
+							// TODO Do a better job selecting rightward captor.
+							if !candidates.is_empty() {
+								candidates.sort_by_key(|captor| captor.frame.left);
+								let &next_captor = candidates.first().expect("rightward captor");
+								active_captor_id = Some(next_captor.id);
+								send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg.clone())).expect("can send process msg");
+							}
 						}
 					}
 					UserEvent::FocusUp => {
@@ -95,7 +123,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 								candidates.sort_by_key(|captor| -captor.frame.bottom);
 								let &next_captor = candidates.first().expect("higher captor");
 								active_captor_id = Some(next_captor.id);
-								send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg)).expect("can send process msg");
+								send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg.clone())).expect("can send process msg");
 							}
 						}
 					}
@@ -109,7 +137,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 								candidates.sort_by_key(|captor| captor.frame.top);
 								let &next_captor = candidates.first().expect("lower captor");
 								active_captor_id = Some(next_captor.id);
-								send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg)).expect("can send process msg");
+								send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg.clone())).expect("can send process msg");
 							}
 						}
 					}
@@ -141,6 +169,15 @@ fn read_keyboard(process: Sender<ProcessMsg>) -> Result<(), Box<dyn Error + Send
 				KeyCode::Char(' ') => {
 					process.send(ProcessMsg::User(UserEvent::Select))?;
 				}
+				KeyCode::Backspace => {
+					process.send(ProcessMsg::User(UserEvent::DeleteBack))?;
+				}
+				KeyCode::Left | KeyCode::Char('h') => {
+					process.send(ProcessMsg::User(UserEvent::FocusLeft))?;
+				}
+				KeyCode::Right | KeyCode::Char('l') => {
+					process.send(ProcessMsg::User(UserEvent::FocusRight))?;
+				}
 				KeyCode::Up | KeyCode::Char('k') => {
 					process.send(ProcessMsg::User(UserEvent::FocusUp))?;
 				}
@@ -149,6 +186,9 @@ fn read_keyboard(process: Sender<ProcessMsg>) -> Result<(), Box<dyn Error + Send
 				}
 				KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
 					break;
+				}
+				KeyCode::Char(c) if !c.is_control() => {
+					process.send(ProcessMsg::User(UserEvent::Char(c)))?;
 				}
 				_ => {}
 			},

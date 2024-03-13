@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use crate::tools::captor::Captor;
+use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::fill::Fill;
 use crate::tools::frame::Frame;
 
@@ -32,8 +32,17 @@ pub trait Shaping {
 	fn shape(&mut self, edge_frame: Frame) -> ZMax;
 }
 
-pub trait View {
-	type Msg: Send + Sync + 'static;
-	fn update(&mut self, msg: Self::Msg);
-	fn get_fills_captors(&self, edge_frame: Frame) -> (Vec<Fill>, Vec<Captor<Self::Msg>>);
+pub trait Viewing: Shaping {
+	type Msg;
+	fn get_fills_captors(&self, active_captor_id: Option<CaptorId>) -> (Vec<Fill>, Vec<Captor<Self::Msg>>);
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum CursorEvent {
+	Focus,
+	Select,
+	MoveLeft,
+	MoveRight,
+	DeleteBack,
+	Char(char),
 }
