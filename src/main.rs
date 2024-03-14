@@ -1,12 +1,10 @@
 use std::collections::HashMap;
 use std::error::Error;
-use std::sync::mpsc::{channel, Sender};
-use std::thread;
-
-use crossterm::event::{Event, KeyCode, KeyModifiers};
+use std::sync::mpsc::channel;
 
 use tools::console::Console;
 use tools::screen::Screen;
+use tools::user;
 
 use crate::app::sample::{SampleApp, SampleAppMsg};
 use crate::tools::captor::{Captor, CaptorId};
@@ -28,16 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 	let mut app = SampleApp::new();
 	let mut console = Console::start()?;
 	let (send_process, recv_process) = channel::<ProcessMsg>();
-	thread::spawn({
-		let process = send_process.clone();
-		move || {
-			let msg = match read_keyboard(process.clone()) {
-				Ok(_) => ProcessMsg::User(UserEvent::Quit),
-				Err(err) => ProcessMsg::Error(err),
-			};
-			process.send(msg).expect("send process msg");
-		}
-	});
+	user::connect(&send_process);
 	let mut active_captor_id: Option<CaptorId> = None;
 	loop {
 		let mut screen = Screen::new(console.width_height());
@@ -160,40 +149,4 @@ fn get_user_event_msg(user_event: UserEvent, active_captor_id: &Option<CaptorId>
 		.map(|id| captors.get(&id)).flatten()
 		.map(|captor| captor.get_msg(user_event)).flatten();
 	update_msg
-}
-
-fn read_keyboard(process: Sender<ProcessMsg>) -> Result<(), Box<dyn Error + Send + Sync>> {
-	loop {
-		match Console::read()? {
-			Event::Key(key_event) => match key_event.code {
-				KeyCode::Char(' ') => {
-					process.send(ProcessMsg::User(UserEvent::Select))?;
-				}
-				KeyCode::Backspace => {
-					process.send(ProcessMsg::User(UserEvent::DeleteBack))?;
-				}
-				KeyCode::Left | KeyCode::Char('h') => {
-					process.send(ProcessMsg::User(UserEvent::FocusLeft))?;
-				}
-				KeyCode::Right | KeyCode::Char('l') => {
-					process.send(ProcessMsg::User(UserEvent::FocusRight))?;
-				}
-				KeyCode::Up | KeyCode::Char('k') => {
-					process.send(ProcessMsg::User(UserEvent::FocusUp))?;
-				}
-				KeyCode::Down | KeyCode::Char('j') => {
-					process.send(ProcessMsg::User(UserEvent::FocusDown))?;
-				}
-				KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
-					break;
-				}
-				KeyCode::Char(c) if !c.is_control() => {
-					process.send(ProcessMsg::User(UserEvent::Char(c)))?;
-				}
-				_ => {}
-			},
-			_ => {}
-		}
-	}
-	Ok(())
 }

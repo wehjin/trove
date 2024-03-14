@@ -13,6 +13,7 @@ pub mod frame;
 pub mod inset;
 pub mod screen;
 pub mod solar_dark;
+pub mod user;
 pub mod views;
 
 pub enum Cmd<Msg> {
