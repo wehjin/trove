@@ -23,130 +23,145 @@ pub enum ProcessMsg {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-	let mut app = SampleApp::new();
 	let mut console = Console::start()?;
 	let (send_process, recv_process) = channel::<ProcessMsg>();
 	user::connect(&send_process);
+	let mut app = SampleApp::new();
+	let mut app_captors: HashMap<CaptorId, Captor<SampleAppMsg>> = HashMap::new();
 	let mut active_captor_id: Option<CaptorId> = None;
+	let mut next_process_message: Option<ProcessMsg> = None;
 	loop {
-		let mut screen = Screen::new(console.width_height());
-		let _ = app.shape(screen.to_frame());
-		let (screen_fills, ready_captors);
-		loop {
-			let (fills, captors) = app.get_fills_captors(active_captor_id);
-			let captors = captors.into_iter().map(|it| (it.id, it)).collect::<HashMap<_, _>>();
-			match active_captor_id {
-				None => {
-					if captors.is_empty() {
-						// No active captor and no captors available to become active captor.
-						// Current fills and captors are ready to go!
-						(screen_fills, ready_captors) = (fills, captors);
-						break;
-					} else {
-						// No active captor, but at least one available to become active captor.
-						// Pick one and let the views re-make their fills and captors knowing the new active captor.
-						// TODO Do a better job picking the active captor.
-						active_captor_id = captors.keys().next().cloned();
+		let mut repeat_process_updates: bool = true;
+		while repeat_process_updates {
+			repeat_process_updates = false;
+			let process_messages = {
+				let mut process_messages = next_process_message.take().into_iter().collect::<Vec<_>>();
+				process_messages.extend(recv_process.try_iter().collect::<Vec<_>>());
+				process_messages
+			};
+			for msg in process_messages {
+				match msg {
+					ProcessMsg::Error(err) => return Err(err),
+					ProcessMsg::Internal(app_msg) => {
+						let app_cmd = app.update_with_effects(app_msg);
+						let process_cmd = app_cmd.map(ProcessMsg::Internal);
+						process_cmd.process(send_process.clone());
+					}
+					ProcessMsg::User(user_event) => {
+						match user_event {
+							UserEvent::Quit => return Ok(()),
+							UserEvent::Select | UserEvent::DeleteBack | UserEvent::Char(_) => {
+								let app_msg: Option<SampleAppMsg> = active_captor_id
+									.map(|id| app_captors.get(&id)).flatten()
+									.map(|captor| captor.get_msg(user_event)).flatten();
+								if let Some(msg) = app_msg {
+									send_process.send(ProcessMsg::Internal(msg)).expect("can send internal process msg");
+									repeat_process_updates = true;
+								}
+							}
+							UserEvent::FocusLeft => {
+								if let Some(old_captor) = active_captor_id.map(|it| app_captors.get(&it)).flatten() {
+									let mut candidates = app_captors.values()
+										.filter(|&captor| captor.frame.right <= old_captor.frame.left)
+										.collect::<Vec<_>>();
+									// TODO Do a better job selecting leftward captor.
+									if !candidates.is_empty() {
+										candidates.sort_by_key(|captor| -captor.frame.right);
+										let &next_captor = candidates.first().expect("leftward captor");
+										active_captor_id = Some(next_captor.id);
+										send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg.clone())).expect("can send process msg");
+										repeat_process_updates = true;
+									}
+								}
+							}
+							UserEvent::FocusRight => {
+								if let Some(old_captor) = active_captor_id.map(|it| app_captors.get(&it)).flatten() {
+									let mut candidates = app_captors.values()
+										.filter(|&captor| captor.frame.left >= old_captor.frame.right)
+										.collect::<Vec<_>>();
+									// TODO Do a better job selecting rightward captor.
+									if !candidates.is_empty() {
+										candidates.sort_by_key(|captor| captor.frame.left);
+										let &next_captor = candidates.first().expect("rightward captor");
+										active_captor_id = Some(next_captor.id);
+										send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg.clone())).expect("can send process msg");
+										repeat_process_updates = true;
+									}
+								}
+							}
+							UserEvent::FocusUp => {
+								if let Some(old_captor) = active_captor_id.map(|it| app_captors.get(&it)).flatten() {
+									let mut candidates = app_captors.values()
+										.filter(|&captor| captor.frame.bottom <= old_captor.frame.top)
+										.collect::<Vec<_>>();
+									// TODO Do a better job selecting higher captor.
+									if !candidates.is_empty() {
+										candidates.sort_by_key(|captor| -captor.frame.bottom);
+										let &next_captor = candidates.first().expect("higher captor");
+										active_captor_id = Some(next_captor.id);
+										send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg.clone())).expect("can send process msg");
+										repeat_process_updates = true;
+									}
+								}
+							}
+							UserEvent::FocusDown => {
+								if let Some(old_captor) = active_captor_id.map(|it| app_captors.get(&it)).flatten() {
+									let mut candidates = app_captors.values()
+										.filter(|&captor| captor.frame.top >= old_captor.frame.bottom)
+										.collect::<Vec<_>>();
+									// TODO Do a better job selecting lower captor.
+									if !candidates.is_empty() {
+										candidates.sort_by_key(|captor| captor.frame.top);
+										let &next_captor = candidates.first().expect("lower captor");
+										active_captor_id = Some(next_captor.id);
+										send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg.clone())).expect("can send process msg");
+										repeat_process_updates = true;
+									}
+								}
+							}
+						}
 					}
 				}
-				Some(captor_id) => {
-					if captors.contains_key(&captor_id) {
-						// Active captor and it remains useful.
-						// Current fills and captors are ready to go!
-						(screen_fills, ready_captors) = (fills, captors);
-						break;
-					} else {
-						// Active captor but it is no longer a captor.
-						// Forget it and let the view re-make their fills and captors without an active captor.
-						active_captor_id = None;
+			}
+		}
+		let mut screen = Screen::new(console.width_height());
+		let _ = app.shape(screen.to_frame());
+		let (screen_fills, captors) = app.get_fills_captors(active_captor_id);
+		app_captors = captors.into_iter().map(|it| (it.id, it)).collect::<HashMap<_, _>>();
+		match active_captor_id {
+			None => {
+				if app_captors.is_empty() {
+					// No active captor and no captors available to become active captor. Current fills and captors
+					// are ready to go!
+				} else {
+					// No active captor, but at least one available to become active captor. Pick one and let the
+					// views re-make their fills and captors knowing the new active captor.
+					// TODO Do a better job picking the active captor.
+					let captor_id = app_captors.keys().next().expect("ready-captors has captor-id").clone();
+					active_captor_id = Some(captor_id);
+					if let Some(focus_msg) = app_captors[&captor_id].get_focus_msg() {
+						send_process.send(ProcessMsg::Internal(focus_msg)).expect("send process message with focus");
 					}
+					// Continue even if there is no focus message because we need to regenerate fills and captors
+					// using the new active captor.
+					continue;
+				}
+			}
+			Some(captor_id) => {
+				if app_captors.contains_key(&captor_id) {
+					// Active captor is still good. Current fills and captors are ready to go!
+				} else {
+					// Active captor no longer exists. Forget it and let the view re-make their fills and captors
+					// without an active captor.
+					active_captor_id = None;
+					continue;
 				}
 			}
 		}
 		screen.add_fills(screen_fills);
 		screen.print_to(&mut console);
-		match recv_process.recv()? {
-			ProcessMsg::User(user_event) => {
-				match user_event {
-					UserEvent::Quit => break,
-					UserEvent::Select | UserEvent::DeleteBack | UserEvent::Char(_) => {
-						if let Some(msg) = get_user_event_msg(user_event, &active_captor_id, ready_captors) {
-							send_process.send(ProcessMsg::Internal(msg)).expect("can send process msg");
-						}
-					}
-					UserEvent::FocusLeft => {
-						if let Some(old_captor) = active_captor_id.map(|it| ready_captors.get(&it)).flatten() {
-							let mut candidates = ready_captors.values()
-								.filter(|&captor| captor.frame.right <= old_captor.frame.left)
-								.collect::<Vec<_>>();
-							// TODO Do a better job selecting leftward captor.
-							if !candidates.is_empty() {
-								candidates.sort_by_key(|captor| -captor.frame.right);
-								let &next_captor = candidates.first().expect("leftward captor");
-								active_captor_id = Some(next_captor.id);
-								send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg.clone())).expect("can send process msg");
-							}
-						}
-					}
-					UserEvent::FocusRight => {
-						if let Some(old_captor) = active_captor_id.map(|it| ready_captors.get(&it)).flatten() {
-							let mut candidates = ready_captors.values()
-								.filter(|&captor| captor.frame.left >= old_captor.frame.right)
-								.collect::<Vec<_>>();
-							// TODO Do a better job selecting rightward captor.
-							if !candidates.is_empty() {
-								candidates.sort_by_key(|captor| captor.frame.left);
-								let &next_captor = candidates.first().expect("rightward captor");
-								active_captor_id = Some(next_captor.id);
-								send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg.clone())).expect("can send process msg");
-							}
-						}
-					}
-					UserEvent::FocusUp => {
-						if let Some(old_captor) = active_captor_id.map(|it| ready_captors.get(&it)).flatten() {
-							let mut candidates = ready_captors.values()
-								.filter(|&captor| captor.frame.bottom <= old_captor.frame.top)
-								.collect::<Vec<_>>();
-							// TODO Do a better job selecting higher captor.
-							if !candidates.is_empty() {
-								candidates.sort_by_key(|captor| -captor.frame.bottom);
-								let &next_captor = candidates.first().expect("higher captor");
-								active_captor_id = Some(next_captor.id);
-								send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg.clone())).expect("can send process msg");
-							}
-						}
-					}
-					UserEvent::FocusDown => {
-						if let Some(old_captor) = active_captor_id.map(|it| ready_captors.get(&it)).flatten() {
-							let mut candidates = ready_captors.values()
-								.filter(|&captor| captor.frame.top >= old_captor.frame.bottom)
-								.collect::<Vec<_>>();
-							// TODO Do a better job selecting lower captor.
-							if !candidates.is_empty() {
-								candidates.sort_by_key(|captor| captor.frame.top);
-								let &next_captor = candidates.first().expect("lower captor");
-								active_captor_id = Some(next_captor.id);
-								send_process.send(ProcessMsg::Internal(next_captor.pre_focus_msg.clone())).expect("can send process msg");
-							}
-						}
-					}
-				}
-			}
-			ProcessMsg::Error(err) => {
-				return Err(err);
-			}
-			ProcessMsg::Internal(app_msg) => {
-				let cmd = app.update_with_effects(app_msg);
-				cmd.map(ProcessMsg::Internal).process(send_process.clone());
-			}
-		}
-	}
-	Ok(())
-}
 
-fn get_user_event_msg(user_event: UserEvent, active_captor_id: &Option<CaptorId>, captors: HashMap<CaptorId, Captor<SampleAppMsg>>) -> Option<SampleAppMsg> {
-	let update_msg = active_captor_id
-		.map(|id| captors.get(&id)).flatten()
-		.map(|captor| captor.get_msg(user_event)).flatten();
-	update_msg
+		let next_process_msg = recv_process.recv()?;
+		next_process_message = Some(next_process_msg);
+	}
 }

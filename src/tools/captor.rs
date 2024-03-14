@@ -14,6 +14,19 @@ pub struct Captor<Msg> {
 	pub pre_focus_msg: Msg,
 }
 
+impl<Msg: Clone> Captor<Msg> {
+	pub fn get_msg(&self, key: UserEvent) -> Option<Msg> {
+		if let Some(msg) = self.event_map.get(&key) {
+			Some(msg.clone())
+		} else {
+			None
+		}
+	}
+	pub fn get_focus_msg(&self) -> Option<Msg> {
+		Some(self.pre_focus_msg.clone())
+	}
+}
+
 impl<Msg> Captor<Msg> {
 	pub fn map_msg<WrapMsg>(self, map_msg: impl Fn(Msg) -> WrapMsg) -> Captor<WrapMsg> {
 		Captor {
@@ -24,16 +37,6 @@ impl<Msg> Captor<Msg> {
 				.collect(),
 			frame: self.frame,
 			pre_focus_msg: map_msg(self.pre_focus_msg),
-		}
-	}
-}
-
-impl<Msg: Clone> Captor<Msg> {
-	pub fn get_msg(&self, key: UserEvent) -> Option<Msg> {
-		if let Some(msg) = self.event_map.get(&key) {
-			Some(msg.clone())
-		} else {
-			None
 		}
 	}
 }
