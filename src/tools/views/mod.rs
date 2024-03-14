@@ -1,6 +1,8 @@
 use std::ops::Add;
 
+use crate::tools::beats::Beat;
 use crate::tools::captor::{Captor, CaptorId};
+use crate::tools::Cmd;
 use crate::tools::fill::Fill;
 use crate::tools::frame::Frame;
 
@@ -25,7 +27,8 @@ impl Add<usize> for ZMax {
 
 pub trait Updating {
 	type Msg;
-	fn update(&mut self, msg: Self::Msg);
+	fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg>;
+	fn get_beats(&self) -> Vec<Beat<Self::Msg>>;
 }
 
 pub trait Shaping {

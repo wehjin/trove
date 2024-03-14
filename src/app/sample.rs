@@ -4,6 +4,7 @@ use crate::app::details::{Details, DetailsMsg};
 use crate::app::sample::SampleAppMsg::{ForDetails, ForFab, ForScrollList};
 use crate::data::Asset;
 use crate::tools::{Cmd, solar_dark};
+use crate::tools::beats::Beat;
 use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
@@ -42,35 +43,6 @@ impl SampleApp {
 			details: Details::default(),
 			title_frame: Frame::default(),
 			list_frame: Frame::default(),
-		}
-	}
-	pub fn update_with_effects(&mut self, msg: SampleAppMsg) -> Cmd<SampleAppMsg> {
-		match msg {
-			ForFab(msg) => match self.fab.update(msg) {
-				JustClicked::Yes => {
-					let asset = Asset::new(self.asset_list.len() + 1);
-					let asset_row = asset.to_row_display();
-					self.asset_list.push(asset);
-					self.scroll_list.add_row(asset_row);
-					Cmd::None
-				}
-				JustClicked::No(cmd) => cmd.map(ForFab),
-			},
-			ForScrollList(msg) => {
-				let row_selected = self.scroll_list.update_with_event(msg);
-				match row_selected {
-					JustSelected::None => {}
-					JustSelected::Row(index) => {
-						self.selected_asset = Some(index);
-						self.details.update(DetailsMsg::SetAsset(self.asset_list[index].clone()))
-					}
-				}
-				Cmd::None
-			}
-			ForDetails(msg) => {
-				self.details.update(msg);
-				Cmd::None
-			}
 		}
 	}
 	pub fn get_fills_captors(&self, active_captor_id: Option<CaptorId>) -> (Vec<Fill>, Vec<Captor<SampleAppMsg>>) {
@@ -117,6 +89,45 @@ impl SampleApp {
 			detail_captors,
 		].into_iter().flatten().collect();
 		(fills, captors)
+	}
+}
+
+impl Updating for SampleApp {
+	type Msg = SampleAppMsg;
+	fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg> {
+		match msg {
+			ForFab(msg) => match self.fab.update(msg) {
+				JustClicked::Yes => {
+					let asset = Asset::new(self.asset_list.len() + 1);
+					let asset_row = asset.to_row_display();
+					self.asset_list.push(asset);
+					self.scroll_list.add_row(asset_row);
+					Cmd::None
+				}
+				JustClicked::No(cmd) => cmd.wrap(ForFab),
+			},
+			ForScrollList(msg) => {
+				let row_selected = self.scroll_list.update_with_event(msg);
+				match row_selected {
+					JustSelected::None => {
+						Cmd::None
+					}
+					JustSelected::Row(index) => {
+						self.selected_asset = Some(index);
+						let details_cmd = self.details.update(DetailsMsg::SetAsset(self.asset_list[index].clone()));
+						details_cmd.wrap(ForDetails)
+					}
+				}
+			}
+			ForDetails(msg) => {
+				self.details.update(msg);
+				Cmd::None
+			}
+		}
+	}
+	fn get_beats(&self) -> Vec<Beat<Self::Msg>> {
+		let details_beats = self.details.get_beats();
+		details_beats.into_iter().map(|b| b.wrap(ForDetails)).collect()
 	}
 }
 

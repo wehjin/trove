@@ -1,7 +1,7 @@
 use std::fmt::Debug;
-use std::sync::mpsc::Sender;
 use std::thread;
 
+use crossbeam::channel::Sender;
 #[allow(unused)]
 pub use crossterm::style::Color;
 
@@ -32,7 +32,7 @@ impl<Msg: Send + Sync + 'static + Debug> Cmd<Msg> {
 			}
 		});
 	}
-	pub fn map<U: Send + Sync + 'static>(self, map: impl Fn(Msg) -> U + Send + Sync + 'static) -> Cmd<U> {
+	pub fn wrap<U: Send + Sync + 'static>(self, map: impl Fn(Msg) -> U + Send + Sync + 'static) -> Cmd<U> {
 		match self {
 			Cmd::None => Cmd::None,
 			Cmd::Unit(gen_t) => {

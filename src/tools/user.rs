@@ -1,7 +1,7 @@
 use std::error::Error;
-use std::sync::mpsc::Sender;
 use std::thread;
 
+use crossbeam::channel::Sender;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 
 use crate::ProcessMsg;
@@ -32,22 +32,23 @@ fn loop_keyboard_events(process: Sender<ProcessMsg>) -> Result<(), Box<dyn Error
 				KeyCode::Backspace => {
 					process.send(ProcessMsg::User(UserEvent::DeleteBack))?;
 				}
-				KeyCode::Left | KeyCode::Char('h') => {
+				KeyCode::Left => {
 					process.send(ProcessMsg::User(UserEvent::FocusLeft))?;
 				}
-				KeyCode::Right | KeyCode::Char('l') => {
+				KeyCode::Right => {
 					process.send(ProcessMsg::User(UserEvent::FocusRight))?;
 				}
-				KeyCode::Up | KeyCode::Char('k') => {
+				KeyCode::Up => {
 					process.send(ProcessMsg::User(UserEvent::FocusUp))?;
 				}
-				KeyCode::Down | KeyCode::Char('j') => {
+				KeyCode::Down => {
 					process.send(ProcessMsg::User(UserEvent::FocusDown))?;
 				}
 				KeyCode::Char('c') if key_event.modifiers == KeyModifiers::CONTROL => {
 					break;
 				}
-				KeyCode::Char(c) if !c.is_control() => {
+				KeyCode::Char(c) if !c.is_control()
+					&& (key_event.modifiers == KeyModifiers::NONE || key_event.modifiers == KeyModifiers::SHIFT) => {
 					process.send(ProcessMsg::User(UserEvent::Char(c)))?;
 				}
 				_ => {}

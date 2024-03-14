@@ -1,15 +1,17 @@
 use std::collections::HashMap;
 use std::error::Error;
-use std::sync::mpsc::channel;
+
+use crossbeam::channel::unbounded;
 
 use tools::console::Console;
 use tools::screen::Screen;
 use tools::user;
 
 use crate::app::sample::{SampleApp, SampleAppMsg};
+use crate::tools::beats::Thumper;
 use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::UserEvent;
-use crate::tools::views::Shaping;
+use crate::tools::views::{CursorEvent, Shaping, Updating};
 
 pub mod app;
 pub mod data;
@@ -24,8 +26,11 @@ pub enum ProcessMsg {
 
 fn main() -> Result<(), Box<dyn Error>> {
 	let mut console = Console::start()?;
-	let (send_process, recv_process) = channel::<ProcessMsg>();
+	let (send_process, recv_process) = unbounded();
 	user::connect(&send_process);
+	let mut thumper: Thumper<SampleAppMsg> = Thumper::new();
+	thumper.connect(send_process.clone());
+
 	let mut app = SampleApp::new();
 	let mut app_captors: HashMap<CaptorId, Captor<SampleAppMsg>> = HashMap::new();
 	let mut active_captor_id: Option<CaptorId> = None;
@@ -43,20 +48,34 @@ fn main() -> Result<(), Box<dyn Error>> {
 				match msg {
 					ProcessMsg::Error(err) => return Err(err),
 					ProcessMsg::Internal(app_msg) => {
-						let app_cmd = app.update_with_effects(app_msg);
-						let process_cmd = app_cmd.map(ProcessMsg::Internal);
+						let app_cmd = app.update(app_msg);
+						let process_cmd = app_cmd.wrap(ProcessMsg::Internal);
 						process_cmd.process(send_process.clone());
 					}
 					ProcessMsg::User(user_event) => {
+						let active_captor = active_captor_id.map(|ref id| app_captors.get(id)).flatten();
 						match user_event {
 							UserEvent::Quit => return Ok(()),
-							UserEvent::Select | UserEvent::DeleteBack | UserEvent::Char(_) => {
-								let app_msg: Option<SampleAppMsg> = active_captor_id
-									.map(|id| app_captors.get(&id)).flatten()
-									.map(|captor| captor.get_msg(user_event)).flatten();
-								if let Some(msg) = app_msg {
+							UserEvent::Select | UserEvent::DeleteBack => {
+								if let Some(msg) = active_captor.map(|captor| captor.get_msg(user_event)).flatten() {
 									send_process.send(ProcessMsg::Internal(msg)).expect("can send internal process msg");
 									repeat_process_updates = true;
+								}
+							}
+							UserEvent::Char(c) => {
+								if let Some(captor) = active_captor {
+									if captor.kind.takes_chars {
+										if let Some(sender) = &captor.cursor_events_sender {
+											let cursor_event = CursorEvent::Char(c);
+											sender.send(cursor_event).expect("send cursor event");
+											repeat_process_updates = true;
+										}
+									} else {
+										if let Some(msg) = captor.get_msg(user_event) {
+											send_process.send(ProcessMsg::Internal(msg)).expect("can send internal process msg");
+											repeat_process_updates = true;
+										}
+									}
 								}
 							}
 							UserEvent::FocusLeft => {
@@ -124,6 +143,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 				}
 			}
 		}
+		thumper.update(app.get_beats());
+
 		let mut screen = Screen::new(console.width_height());
 		let _ = app.shape(screen.to_frame());
 		let (screen_fills, captors) = app.get_fills_captors(active_captor_id);

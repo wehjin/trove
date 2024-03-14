@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use rand::random;
 
 use crate::tools::{solar_dark, UserEvent};
-use crate::tools::captor::{Captor, CaptorId};
+use crate::tools::captor::{Captor, CaptorId, CaptorKind};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::{Frame, RowKind};
 use crate::tools::inset::Inset;
@@ -78,6 +78,8 @@ impl ScrollList {
 					}
 					let captor = Captor {
 						id: captor_id,
+						kind: CaptorKind::default(),
+						cursor_events_sender: None,
 						event_map: captor_event_map,
 						frame: captor_frame,
 						pre_focus_msg: ScrollListMsg::SetFocus(captor_id),

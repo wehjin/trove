@@ -5,7 +5,7 @@ use std::time::Duration;
 use rand::random;
 
 use crate::tools::{Cmd, solar_dark, UserEvent};
-use crate::tools::captor::{Captor, CaptorId};
+use crate::tools::captor::{Captor, CaptorId, CaptorKind};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::views::{Shaping, ZMax};
@@ -77,8 +77,15 @@ impl Fab {
 		let captors = {
 			let mut event_map = HashMap::new();
 			event_map.insert(UserEvent::Select, FabMsg::Press);
-			let frame = self.edge_frame;
-			vec![Captor { id: captor_id, event_map, frame, pre_focus_msg: FabMsg::Ignore }]
+			let captor = Captor {
+				id: captor_id,
+				kind: CaptorKind::default(),
+				cursor_events_sender: None,
+				event_map,
+				frame: self.edge_frame,
+				pre_focus_msg: FabMsg::Ignore,
+			};
+			vec![captor]
 		};
 		(fills, captors)
 	}

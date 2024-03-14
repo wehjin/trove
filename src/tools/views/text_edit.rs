@@ -1,7 +1,9 @@
+use crossbeam::channel::Sender;
 use rand::random;
 
-use crate::tools::{solar_dark, UserEvent};
-use crate::tools::captor::{Captor, CaptorId};
+use crate::tools::{Cmd, solar_dark, UserEvent};
+use crate::tools::beats::{Beat, signal};
+use crate::tools::captor::{Captor, CaptorId, CaptorKind};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::frame::layout::Layout;
@@ -22,6 +24,38 @@ pub struct TextEditor {
 	pub cursor_index: usize,
 	pub left_index: usize,
 	pub text_frame: Frame,
+	cursor_events_sender: Sender<CursorEvent>,
+	cursor_events_beat: Beat<TextEditorMsg>,
+}
+
+impl TextEditor {
+	pub fn new() -> Self {
+		let (on_cursor_event, cursor_beat) = signal(TextEditorMsg::OnCursor);
+		Self {
+			id: random(),
+			text: "".to_string(),
+			edge: Frame::default(),
+			cursor_index: 0,
+			left_index: 0,
+			text_frame: Frame::default(),
+			cursor_events_sender: on_cursor_event,
+			cursor_events_beat: cursor_beat,
+		}
+	}
+	fn to_frames(&self, frame: Frame, head: &str) -> (Frame, Frame, Frame) {
+		let head_len = head.chars().count();
+		let head_frame = frame.with_width_from_left(head_len as u16);
+		let cursor_frame = frame.inset(Inset::Left(head_len as u8))
+			.with_width_from_left(Self::CURSOR_LEN as u16);
+		let head_cursor_len = head_len + Self::CURSOR_LEN;
+		let tail_frame = frame.inset(Inset::Left(head_cursor_len as u8));
+		(head_frame, cursor_frame, tail_frame)
+	}
+
+	fn captor_id(&self) -> CaptorId {
+		let id = CaptorId(self.id, 0);
+		id
+	}
 }
 
 impl Default for TextEditor {
@@ -31,7 +65,7 @@ impl Default for TextEditor {
 impl Updating for TextEditor {
 	type Msg = TextEditorMsg;
 
-	fn update(&mut self, msg: Self::Msg) {
+	fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg> {
 		match msg {
 			TextEditorMsg::SetText(text) => self.set_text(text),
 			TextEditorMsg::SetEdge(edge) => self.set_edge(edge),
@@ -46,6 +80,10 @@ impl Updating for TextEditor {
 				}
 			}
 		}
+		Cmd::None
+	}
+	fn get_beats(&self) -> Vec<Beat<Self::Msg>> {
+		vec![self.cursor_events_beat.clone()]
 	}
 }
 
@@ -103,44 +141,17 @@ impl Viewing for TextEditor {
 		};
 		let captor = Captor {
 			id: self.captor_id(),
+			kind: CaptorKind { takes_chars: true },
+			cursor_events_sender: Some(self.cursor_events_sender.clone()),
 			event_map: vec![
 				(UserEvent::Select, TextEditorMsg::OnCursor(CursorEvent::Select)),
 				(UserEvent::DeleteBack, TextEditorMsg::OnCursor(CursorEvent::DeleteBack)),
-				(UserEvent::Char('a'), TextEditorMsg::OnCursor(CursorEvent::Char('a'))),
 			].into_iter().collect(),
 			frame: self.text_frame,
 			pre_focus_msg: TextEditorMsg::OnCursor(CursorEvent::Focus),
 		};
 		let fills = vec![back_fills, text_fills].into_iter().flatten().collect();
 		(fills, vec![captor])
-	}
-}
-
-impl TextEditor {
-	pub fn new() -> Self {
-		Self {
-			id: random(),
-			text: "".to_string(),
-			edge: Frame::default(),
-			cursor_index: 0,
-			left_index: 0,
-			text_frame: Frame::default(),
-		}
-	}
-
-	fn to_frames(&self, frame: Frame, head: &str) -> (Frame, Frame, Frame) {
-		let head_len = head.chars().count();
-		let head_frame = frame.with_width_from_left(head_len as u16);
-		let cursor_frame = frame.inset(Inset::Left(head_len as u8))
-			.with_width_from_left(Self::CURSOR_LEN as u16);
-		let head_cursor_len = head_len + Self::CURSOR_LEN;
-		let tail_frame = frame.inset(Inset::Left(head_cursor_len as u8));
-		(head_frame, cursor_frame, tail_frame)
-	}
-
-	fn captor_id(&self) -> CaptorId {
-		let id = CaptorId(self.id, 0);
-		id
 	}
 }
 

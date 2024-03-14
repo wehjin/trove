@@ -1,7 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
-use std::ptr::addr_eq;
 use std::sync::Arc;
 use std::thread;
 
@@ -9,31 +8,31 @@ use crossbeam::channel::{Receiver, Sender, unbounded};
 use crossbeam::select;
 use rand::random;
 
+use crate::app::sample::SampleAppMsg;
+use crate::ProcessMsg;
+
 pub fn signal<Value: Send + 'static, Msg: Send + 'static>(into_msg: fn(Value) -> Msg) -> (Sender<Value>, Beat<Msg>) {
 	let (send_signal, receive_signal) = unbounded::<Value>();
-	let beat = Beat {
-		id: random(),
-		start: Arc::new(move |send_beat: Sender<Msg>| {
-			let receive_signal = receive_signal.clone();
-			let (end_beat, beat_ended) = unbounded::<()>();
-			thread::spawn(move || {
-				loop {
-					select! {
-						recv(beat_ended) -> _ => break,
-						recv(receive_signal) -> signal => {
-							if let Ok(signal) = signal {
-								let msg = into_msg(signal);
-								send_beat.send(msg).expect("Send beat");
-							} else {
-								break;
-							}
-						},
-					}
+	let beat = Beat::new(move |send_beat: Sender<Msg>| {
+		let receive_signal = receive_signal.clone();
+		let (end_beat, beat_ended) = unbounded::<()>();
+		thread::spawn(move || {
+			loop {
+				select! {
+					recv(beat_ended) -> _ => break,
+					recv(receive_signal) -> signal => {
+						if let Ok(signal) = signal {
+							let msg = into_msg(signal);
+							send_beat.send(msg).expect("Send beat");
+						} else {
+							break;
+						}
+					},
 				}
-			});
-			EndBeat(end_beat)
-		}),
-	};
+			}
+		});
+		EndBeat(end_beat)
+	});
 	(send_signal, beat)
 }
 
@@ -49,6 +48,38 @@ impl EndBeat {
 pub struct Beat<Msg> {
 	pub id: usize,
 	pub start: Arc<dyn Fn(Sender<Msg>) -> EndBeat + Send + Sync>,
+}
+
+impl<Msg> Beat<Msg> {
+	pub fn new(start: impl Fn(Sender<Msg>) -> EndBeat + Send + Sync + 'static) -> Self {
+		Self {
+			id: random(),
+			start: Arc::new(start),
+		}
+	}
+}
+
+impl<Msg> Clone for Beat<Msg> {
+	fn clone(&self) -> Self {
+		Self {
+			id: self.id,
+			start: self.start.clone(),
+		}
+	}
+}
+
+impl<Msg> PartialEq<Self> for Beat<Msg> {
+	fn eq(&self, other: &Self) -> bool {
+		self.id == other.id
+	}
+}
+
+impl<Msg> Eq for Beat<Msg> {}
+
+impl<Msg> Hash for Beat<Msg> {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.id.hash(state);
+	}
 }
 
 impl<Msg: Send + 'static> Beat<Msg> {
@@ -82,33 +113,6 @@ impl<Msg: Send + 'static> Beat<Msg> {
 	}
 }
 
-impl<Msg> Clone for Beat<Msg> {
-	fn clone(&self) -> Self {
-		Self {
-			id: self.id,
-			start: self.start.clone(),
-		}
-	}
-}
-
-impl<Msg> PartialEq<Self> for Beat<Msg> {
-	fn eq(&self, other: &Self) -> bool {
-		let self_start: *const dyn Fn(Sender<Msg>) -> EndBeat = self.start.as_ref();
-		let other_start: *const dyn Fn(Sender<Msg>) -> EndBeat = self.start.as_ref();
-		self.id == other.id && addr_eq(self_start, other_start)
-	}
-}
-
-impl<Msg> Eq for Beat<Msg> {}
-
-impl<Msg> Hash for Beat<Msg> {
-	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.id.hash(state);
-		let self_start: *const dyn Fn(Sender<Msg>) -> EndBeat = self.start.as_ref();
-		self_start.hash(state);
-	}
-}
-
 
 pub struct Thumper<Msg> {
 	end_beats: HashMap<Beat<Msg>, EndBeat>,
@@ -124,6 +128,27 @@ impl<Msg> Thumper<Msg> {
 			beat_sender,
 			beat_receiver,
 		}
+	}
+}
+
+impl Thumper<SampleAppMsg> {
+	pub fn connect(&self, process_message_sender: Sender<ProcessMsg>) {
+		let beat_receiver = self.beat_receiver.clone();
+		thread::spawn(move || {
+			loop {
+				match beat_receiver.recv() {
+					Ok(beat_msg) => {
+						let internal = ProcessMsg::Internal(beat_msg);
+						process_message_sender.send(internal).expect("send internal");
+					}
+					Err(err) => {
+						let error = ProcessMsg::Error(Box::new(err));
+						process_message_sender.send(error).expect("send error");
+						break;
+					}
+				}
+			}
+		});
 	}
 }
 
@@ -170,6 +195,18 @@ mod tests {
 		let mut thumper = Thumper::new();
 		thumper.update(vec![signal_beat.clone()]);
 		assert!(thumper.contains_beat(&signal_beat));
+	}
+
+	#[test]
+	fn thumper_recognizes_wrapped_beats_as_equal() {
+		#[derive(Debug, Eq, PartialEq)]
+		struct ForInner(pub Msg);
+		let (_, signal_beat) = signal(Msg::SetCount);
+		let wrapped1 = signal_beat.clone().wrap(ForInner);
+		let wrapped2 = signal_beat.clone().wrap(ForInner);
+		let mut thumper = Thumper::new();
+		thumper.update(vec![wrapped1]);
+		assert!(thumper.contains_beat(&wrapped2));
 	}
 
 	#[test]

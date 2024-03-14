@@ -1,10 +1,11 @@
 use crate::data::Asset;
+use crate::tools::{Cmd, solar_dark};
+use crate::tools::beats::Beat;
 use crate::tools::captor::{Captor, CaptorId};
 use crate::tools::fill::{Fill, Glyph, string_to_fills};
 use crate::tools::frame::Frame;
 use crate::tools::frame::layout::Layout;
 use crate::tools::inset::Inset;
-use crate::tools::solar_dark;
 use crate::tools::views::{Shaping, Updating, Viewing, ZMax};
 use crate::tools::views::text_edit::{TextEditor, TextEditorMsg};
 
@@ -61,11 +62,21 @@ pub enum DetailsMsg {
 impl Updating for Details {
 	type Msg = DetailsMsg;
 
-	fn update(&mut self, msg: Self::Msg) {
+	fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg> {
 		match msg {
-			DetailsMsg::SetAsset(asset) => self.asset = Some(asset),
-			DetailsMsg::ForTextEditor(msg) => self.text_edit.update(msg),
+			DetailsMsg::SetAsset(asset) => {
+				self.asset = Some(asset);
+				Cmd::None
+			}
+			DetailsMsg::ForTextEditor(msg) => {
+				self.text_edit.update(msg).wrap(Self::Msg::ForTextEditor)
+			}
 		}
+	}
+
+	fn get_beats(&self) -> Vec<Beat<Self::Msg>> {
+		let text_edit_beats = self.text_edit.get_beats();
+		text_edit_beats.into_iter().map(|b| b.wrap(DetailsMsg::ForTextEditor)).collect()
 	}
 }
 
