@@ -57,9 +57,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 						match user_event {
 							UserEvent::Quit => return Ok(()),
 							UserEvent::Select => {
-								if let Some(msg) = active_captor.map(|captor| captor.get_msg(user_event)).flatten() {
-									send_process.send(ProcessMsg::Internal(msg)).expect("can send internal process msg");
-									repeat_process_updates = true;
+								if let Some(captor) = active_captor {
+									if captor.kind.takes_select {
+										if let Some(sender) = &captor.cursor_events_sender {
+											let cursor_event = CursorEvent::Select;
+											sender.send(cursor_event).expect("send select event");
+											repeat_process_updates = true;
+										}
+									} else {
+										if let Some(msg) = captor.get_msg(user_event) {
+											send_process.send(ProcessMsg::Internal(msg)).expect("can send internal process msg");
+											repeat_process_updates = true;
+										}
+									}
 								}
 							}
 							UserEvent::DeleteBack => {

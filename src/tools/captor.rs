@@ -53,4 +53,5 @@ impl<Msg> Captor<Msg> {
 pub struct CaptorKind {
 	pub takes_chars: bool,
 	pub takes_delete_back: bool,
+	pub takes_select: bool,
 }
