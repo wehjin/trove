@@ -46,8 +46,8 @@ impl EndBeat {
 }
 
 pub struct Beat<Msg> {
-	pub id: usize,
-	pub start: Arc<dyn Fn(Sender<Msg>) -> EndBeat + Send + Sync>,
+	id: usize,
+	start: Arc<dyn Fn(Sender<Msg>) -> EndBeat + Send + Sync>,
 }
 
 impl<Msg> Beat<Msg> {
