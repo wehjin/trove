@@ -56,10 +56,26 @@ fn main() -> Result<(), Box<dyn Error>> {
 						let active_captor = active_captor_id.map(|ref id| app_captors.get(id)).flatten();
 						match user_event {
 							UserEvent::Quit => return Ok(()),
-							UserEvent::Select | UserEvent::DeleteBack => {
+							UserEvent::Select => {
 								if let Some(msg) = active_captor.map(|captor| captor.get_msg(user_event)).flatten() {
 									send_process.send(ProcessMsg::Internal(msg)).expect("can send internal process msg");
 									repeat_process_updates = true;
+								}
+							}
+							UserEvent::DeleteBack => {
+								if let Some(captor) = active_captor {
+									if captor.kind.takes_delete_back {
+										if let Some(sender) = &captor.cursor_events_sender {
+											let cursor_event = CursorEvent::DeleteBack;
+											sender.send(cursor_event).expect("send delete-back event");
+											repeat_process_updates = true;
+										}
+									} else {
+										if let Some(msg) = captor.get_msg(user_event) {
+											send_process.send(ProcessMsg::Internal(msg)).expect("can send internal process msg");
+											repeat_process_updates = true;
+										}
+									}
 								}
 							}
 							UserEvent::Char(c) => {
@@ -67,7 +83,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 									if captor.kind.takes_chars {
 										if let Some(sender) = &captor.cursor_events_sender {
 											let cursor_event = CursorEvent::Char(c);
-											sender.send(cursor_event).expect("send cursor event");
+											sender.send(cursor_event).expect("send char event");
 											repeat_process_updates = true;
 										}
 									} else {

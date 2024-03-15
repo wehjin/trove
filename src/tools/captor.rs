@@ -52,4 +52,5 @@ impl<Msg> Captor<Msg> {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
 pub struct CaptorKind {
 	pub takes_chars: bool,
+	pub takes_delete_back: bool,
 }

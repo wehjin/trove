@@ -141,11 +141,13 @@ impl Viewing for TextEditor {
 		};
 		let captor = Captor {
 			id: self.captor_id(),
-			kind: CaptorKind { takes_chars: true },
+			kind: CaptorKind {
+				takes_chars: true,
+				takes_delete_back: self.cursor_index > 0,
+			},
 			cursor_events_sender: Some(self.cursor_events_sender.clone()),
 			event_map: vec![
 				(UserEvent::Select, TextEditorMsg::OnCursor(CursorEvent::Select)),
-				(UserEvent::DeleteBack, TextEditorMsg::OnCursor(CursorEvent::DeleteBack)),
 			].into_iter().collect(),
 			frame: self.text_frame,
 			pre_focus_msg: TextEditorMsg::OnCursor(CursorEvent::Focus),
