@@ -44,8 +44,7 @@ impl Console {
 	}
 
 	pub fn move_color_print<T: Display>(&self, col: u16, row: u16, text: T, fg_color: Color, bg_color: Color) {
-		queue!(
-			stdout(),
+		queue!(stdout(),
 			MoveTo(col, row),
 			SetForegroundColor(fg_color),
 			SetBackgroundColor(bg_color),

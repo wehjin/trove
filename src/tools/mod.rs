@@ -16,6 +16,7 @@ pub mod solar_dark;
 pub mod user;
 pub mod views;
 
+#[must_use]
 pub enum Cmd<Msg> {
 	None,
 	Unit(Box<dyn FnOnce() -> Msg + Send + Sync + 'static>),

@@ -120,15 +120,15 @@ impl Updating for SampleApp {
 				}
 			}
 			ForDetails(msg) => {
-				self.details.update(msg);
-				Cmd::None
+				self.details.update(msg).wrap(ForDetails)
 			}
 		}
 	}
 	fn get_beats(&self) -> Vec<Beat<Self::Msg>> {
+		let scroll_beats = self.scroll_list.get_beats().into_iter().map(|b| b.wrap(ForScrollList)).collect::<Vec<_>>();
 		let button_beats = self.fab.get_beats().into_iter().map(|b| b.wrap(ForFab)).collect::<Vec<_>>();
 		let details_beats = self.details.get_beats().into_iter().map(|b| b.wrap(ForDetails)).collect::<Vec<_>>();
-		vec![button_beats, details_beats].into_iter().flatten().collect()
+		vec![scroll_beats, button_beats, details_beats].into_iter().flatten().collect()
 	}
 }
 
@@ -146,7 +146,9 @@ impl Shaping for SampleApp {
 			.shape(&mut self.scroll_list)
 			.take(&mut self.list_frame)
 			.into_z_max();
-		let fab_frame = self.list_frame.into_single_row_fixed_width_at_offset_from_bottom_right(self.fab.min_width_height().0, 2, 1).move_closer(1);
+		let fab_frame = self.list_frame
+			.into_single_row_fixed_width_at_offset_from_bottom_right(self.fab.min_width_height().0, 2, 1)
+			.with_z(z_max.z() + 20);
 		z_max.max(self.fab.shape(fab_frame))
 	}
 }

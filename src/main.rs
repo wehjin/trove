@@ -64,11 +64,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 											sender.send(cursor_event).expect("send select event");
 											repeat_process_updates = true;
 										}
-									} else {
-										if let Some(msg) = captor.get_msg(user_event) {
-											send_process.send(ProcessMsg::Internal(msg)).expect("can send internal process msg");
-											repeat_process_updates = true;
-										}
 									}
 								}
 							}
@@ -80,11 +75,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 											sender.send(cursor_event).expect("send delete-back event");
 											repeat_process_updates = true;
 										}
-									} else {
-										if let Some(msg) = captor.get_msg(user_event) {
-											send_process.send(ProcessMsg::Internal(msg)).expect("can send internal process msg");
-											repeat_process_updates = true;
-										}
 									}
 								}
 							}
@@ -94,11 +84,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 										if let Some(sender) = &captor.cursor_events_sender {
 											let cursor_event = CursorEvent::Char(c);
 											sender.send(cursor_event).expect("send char event");
-											repeat_process_updates = true;
-										}
-									} else {
-										if let Some(msg) = captor.get_msg(user_event) {
-											send_process.send(ProcessMsg::Internal(msg)).expect("can send internal process msg");
 											repeat_process_updates = true;
 										}
 									}

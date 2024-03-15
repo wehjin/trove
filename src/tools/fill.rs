@@ -6,7 +6,8 @@ pub fn string_to_fills(string: &str, frame: Frame, color_index: usize) -> Vec<Fi
 	let chars = string.chars().collect::<Vec<_>>();
 	for i in 0..chars.len() {
 		let char = chars[i];
-		if !char.is_whitespace() && !char.is_control() {
+		if !char.is_control() {
+			let char = if char.is_whitespace() { ' ' } else { char };
 			vec.push(Fill {
 				glyph: Glyph::Rune(char, color_index),
 				frame: fill_zrect.clone(),

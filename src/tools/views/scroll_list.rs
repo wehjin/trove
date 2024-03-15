@@ -1,13 +1,13 @@
-use std::collections::HashMap;
-
+use crossbeam::channel::Sender;
 use rand::random;
 
-use crate::tools::{solar_dark, UserEvent};
+use crate::tools::beats::{Beat, signal};
 use crate::tools::captor::{Captor, CaptorId, CaptorKind};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::{Frame, RowKind};
 use crate::tools::inset::Inset;
-use crate::tools::views::{Shaping, ZMax};
+use crate::tools::solar_dark;
+use crate::tools::views::{CursorEvent, Shaping, ZMax};
 
 pub struct ScrollListRowDisplay {
 	pub col1: String,
@@ -24,7 +24,7 @@ pub enum JustSelected {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ScrollListMsg {
 	SetFocus(CaptorId),
-	Select(usize),
+	ForCursor(CursorEvent),
 }
 
 pub struct ScrollList {
@@ -33,16 +33,21 @@ pub struct ScrollList {
 	frame: Frame,
 	cursor_position: CursorPosition,
 	selected_index: Option<usize>,
+	cursor_events_sender: Sender<CursorEvent>,
+	cursor_events_beat: Beat<ScrollListMsg>,
 }
 
 impl ScrollList {
 	pub fn new(rows: Vec<ScrollListRowDisplay>) -> Self {
+		let (cursor_events_sender, cursor_events_beat) = signal(ScrollListMsg::ForCursor);
 		Self {
 			id: random(),
 			rows,
 			frame: Frame::default(),
 			cursor_position: CursorPosition::new(0),
 			selected_index: None,
+			cursor_events_sender,
+			cursor_events_beat,
 		}
 	}
 	#[must_use]
@@ -52,11 +57,19 @@ impl ScrollList {
 				self.set_focus(index);
 				JustSelected::None
 			}
-			ScrollListMsg::Select(index) => {
-				self.selected_index = Some(index);
-				JustSelected::Row(index)
+			ScrollListMsg::ForCursor(event) => {
+				if let CursorEvent::Select = event {
+					let index = self.cursor_position.cursor_index;
+					self.selected_index = Some(index);
+					JustSelected::Row(index)
+				} else {
+					JustSelected::None
+				}
 			}
 		}
+	}
+	pub fn get_beats(&self) -> Vec<Beat<ScrollListMsg>> {
+		vec![self.cursor_events_beat.clone()]
 	}
 }
 
@@ -72,15 +85,14 @@ impl ScrollList {
 			let captor_id = CaptorId(self.id, item_index);
 			match kind {
 				RowKind::TopRail | RowKind::Interior | RowKind::BottomRail => {
-					let mut captor_event_map = HashMap::new();
-					if kind == RowKind::Interior {
-						captor_event_map.insert(UserEvent::Select, ScrollListMsg::Select(item_index));
-					}
 					let captor = Captor {
 						id: captor_id,
-						kind: CaptorKind::default(),
-						cursor_events_sender: None,
-						event_map: captor_event_map,
+						kind: if kind == RowKind::Interior {
+							CaptorKind::default().with_takes_select()
+						} else {
+							CaptorKind::default().with_takes_select()
+						},
+						cursor_events_sender: Some(self.cursor_events_sender.clone()),
 						frame: captor_frame,
 						pre_focus_msg: ScrollListMsg::SetFocus(captor_id),
 					};

@@ -30,6 +30,14 @@ impl Layout {
 		self.todo.push(frame.move_closer(layers));
 		self
 	}
+	pub fn move_closer_than_z_max(mut self) -> Self {
+		let frame = self.pop_todo();
+		let nearest_z = self.z_max.z() + 1;
+		let new_frame = frame.with_z(nearest_z);
+		self.z_max = self.z_max.max(ZMax(nearest_z));
+		self.todo.push(new_frame);
+		self
+	}
 	pub fn split_top(mut self, rows: u16) -> Self {
 		let frame = self.pop_todo();
 		let (top, bottom) = frame.split_from_top(rows);

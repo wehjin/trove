@@ -58,6 +58,10 @@ impl Frame {
 		let top = bottom - 1;
 		Frame { left, right, top, bottom, z: self.z }
 	}
+	pub fn with_z(mut self, z: i16) -> Self {
+		self.z = z;
+		self
+	}
 	pub fn move_down(mut self, rows: u16) -> Self {
 		self.top += rows as i16;
 		self.bottom += rows as i16;

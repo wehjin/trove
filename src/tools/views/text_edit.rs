@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crossbeam::channel::Sender;
 use rand::random;
 
@@ -149,7 +147,6 @@ impl Viewing for TextEditor {
 				takes_select: true,
 			},
 			cursor_events_sender: Some(self.cursor_events_sender.clone()),
-			event_map: HashMap::new(),
 			frame: self.text_frame,
 			pre_focus_msg: TextEditorMsg::OnCursor(CursorEvent::Focus),
 		};

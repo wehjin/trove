@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
@@ -37,8 +36,8 @@ pub struct Fab {
 	pub label: String,
 	pub pressed: bool,
 	pub edge_frame: Frame,
-	pub cursor_event_sender: Sender<CursorEvent>,
-	pub cursor_event_beat: Beat<FabMsg>,
+	pub cursor_events_sender: Sender<CursorEvent>,
+	pub cursor_events_beat: Beat<FabMsg>,
 }
 
 impl Default for Fab {
@@ -49,8 +48,8 @@ impl Default for Fab {
 			label: "".to_string(),
 			pressed: false,
 			edge_frame: Frame::default(),
-			cursor_event_sender,
-			cursor_event_beat,
+			cursor_events_sender: cursor_event_sender,
+			cursor_events_beat: cursor_event_beat,
 		}
 	}
 }
@@ -74,7 +73,7 @@ impl Fab {
 		}
 	}
 	pub fn get_beats(&self) -> Vec<Beat<FabMsg>> {
-		vec![self.cursor_event_beat.clone()]
+		vec![self.cursor_events_beat.clone()]
 	}
 	pub fn get_fills_captors(&self, active_captor_id: Option<CaptorId>) -> (Vec<Fill>, Vec<Captor<FabMsg>>) {
 		let captor_id = CaptorId(self.id, 0);
@@ -91,9 +90,8 @@ impl Fab {
 		let captors = {
 			let captor = Captor {
 				id: captor_id,
-				kind: CaptorKind::default().take_select(),
-				cursor_events_sender: Some(self.cursor_event_sender.clone()),
-				event_map: HashMap::new(),
+				kind: CaptorKind::default().with_takes_select(),
+				cursor_events_sender: Some(self.cursor_events_sender.clone()),
 				frame: self.edge_frame,
 				pre_focus_msg: FabMsg::Ignore,
 			};
