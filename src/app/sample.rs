@@ -126,8 +126,9 @@ impl Updating for SampleApp {
 		}
 	}
 	fn get_beats(&self) -> Vec<Beat<Self::Msg>> {
-		let details_beats = self.details.get_beats();
-		details_beats.into_iter().map(|b| b.wrap(ForDetails)).collect()
+		let button_beats = self.fab.get_beats().into_iter().map(|b| b.wrap(ForFab)).collect::<Vec<_>>();
+		let details_beats = self.details.get_beats().into_iter().map(|b| b.wrap(ForDetails)).collect::<Vec<_>>();
+		vec![button_beats, details_beats].into_iter().flatten().collect()
 	}
 }
 

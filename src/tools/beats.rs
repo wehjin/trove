@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use std::sync::Arc;
@@ -56,6 +57,12 @@ impl<Msg> Beat<Msg> {
 			id: random(),
 			start: Arc::new(start),
 		}
+	}
+}
+
+impl<Msg> Debug for Beat<Msg> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		write!(f, "Beat {{id={}}}", self.id)
 	}
 }
 

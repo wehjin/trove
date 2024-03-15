@@ -55,3 +55,10 @@ pub struct CaptorKind {
 	pub takes_delete_back: bool,
 	pub takes_select: bool,
 }
+
+impl CaptorKind {
+	pub fn take_select(mut self) -> Self {
+		self.takes_select = true;
+		self
+	}
+}

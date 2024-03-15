@@ -2,19 +2,21 @@ use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 
+use crossbeam::channel::Sender;
 use rand::random;
 
-use crate::tools::{Cmd, solar_dark, UserEvent};
+use crate::tools::{Cmd, solar_dark};
+use crate::tools::beats::{Beat, signal};
 use crate::tools::captor::{Captor, CaptorId, CaptorKind};
 use crate::tools::fill::{Fill, string_to_fills};
 use crate::tools::frame::Frame;
-use crate::tools::views::{Shaping, ZMax};
+use crate::tools::views::{CursorEvent, Shaping, ZMax};
 
 #[derive(Debug, Copy, Clone)]
 pub enum FabMsg {
-	Press,
 	Release,
 	Ignore,
+	ForCursor(CursorEvent),
 }
 
 pub fn timer_cmd<T: Send + Sync + 'static>(millis: u64, msg: T) -> Cmd<T> {
@@ -35,15 +37,20 @@ pub struct Fab {
 	pub label: String,
 	pub pressed: bool,
 	pub edge_frame: Frame,
+	pub cursor_event_sender: Sender<CursorEvent>,
+	pub cursor_event_beat: Beat<FabMsg>,
 }
 
 impl Default for Fab {
 	fn default() -> Self {
+		let (cursor_event_sender, cursor_event_beat) = signal(FabMsg::ForCursor);
 		Fab {
 			id: random(),
 			label: "".to_string(),
 			pressed: false,
 			edge_frame: Frame::default(),
+			cursor_event_sender,
+			cursor_event_beat,
 		}
 	}
 }
@@ -51,9 +58,13 @@ impl Default for Fab {
 impl Fab {
 	pub fn update(&mut self, msg: FabMsg) -> JustClicked {
 		match msg {
-			FabMsg::Press if !self.pressed => {
-				self.pressed = true;
-				JustClicked::No(timer_cmd(100, FabMsg::Release))
+			FabMsg::ForCursor(event) => {
+				if CursorEvent::Select == event && !self.pressed {
+					self.pressed = true;
+					JustClicked::No(timer_cmd(100, FabMsg::Release))
+				} else {
+					JustClicked::No(Cmd::None)
+				}
 			}
 			FabMsg::Release if self.pressed => {
 				self.pressed = false;
@@ -61,6 +72,9 @@ impl Fab {
 			}
 			_ => JustClicked::No(Cmd::None)
 		}
+	}
+	pub fn get_beats(&self) -> Vec<Beat<FabMsg>> {
+		vec![self.cursor_event_beat.clone()]
 	}
 	pub fn get_fills_captors(&self, active_captor_id: Option<CaptorId>) -> (Vec<Fill>, Vec<Captor<FabMsg>>) {
 		let captor_id = CaptorId(self.id, 0);
@@ -75,13 +89,11 @@ impl Fab {
 		let label_fills = string_to_fills(self.label.as_str(), self.edge_frame.move_closer(1), label_color);
 		let fills = vec![back_fill, label_fills].into_iter().flatten().collect::<Vec<_>>();
 		let captors = {
-			let mut event_map = HashMap::new();
-			event_map.insert(UserEvent::Select, FabMsg::Press);
 			let captor = Captor {
 				id: captor_id,
-				kind: CaptorKind::default(),
-				cursor_events_sender: None,
-				event_map,
+				kind: CaptorKind::default().take_select(),
+				cursor_events_sender: Some(self.cursor_event_sender.clone()),
+				event_map: HashMap::new(),
 				frame: self.edge_frame,
 				pre_focus_msg: FabMsg::Ignore,
 			};
